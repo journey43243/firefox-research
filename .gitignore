@@ -1,3 +1,6 @@
 *.idea
 *.dat
 *.DAT
+*__pycache__
+Cases/
+Logs/

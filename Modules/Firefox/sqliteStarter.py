@@ -11,19 +11,27 @@ class SQLiteStarter:
     def dropAllTables(self):
         namesList = []
         for name in dir(self):
-            if 'create' in name and 'Table' in name:
+            if name.startswith('create') and name.endswith('Table'):
                 tableName = name.replace('create', '').replace('Table', '')
                 namesList.append(tableName.lower())
         self.dbInterface.RemoveTempTables(namesList)
+
+    def createAllTables(self):
+        for methodName in dir(self):
+            if methodName.startswith('create') and methodName.endswith('Table'):
+                method = getattr(self, methodName)
+                if callable(method):
+                    method()
+
+
     def createProfilesTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
         )
         self.logInterface.Info(type(self), 'Таблица с профилями создана.')
-
     def createHistoryTable(self) -> None:
         self.dbInterface.ExecCommit(
-            '''CREATE TABLE history (id INTEGER PRIMARY KEY, url TEXT
+            '''CREATE TABLE history (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT,
                 title TEXT, visit_count INTEGER, typed INTEGER, last_visit_date INTEGER,
                 profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id))
             '''

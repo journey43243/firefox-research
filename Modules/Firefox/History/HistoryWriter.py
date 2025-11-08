@@ -1,16 +1,18 @@
-from Common.Routines import _AbstractLocalDatabaseClass
+from Common.Routines import SQLiteDatabaseInterface
 from Interfaces.LogInterface import LogInterface
+from Modules.Firefox.interfaces.WriterInterface import WriterABC
 
-class HistoryWriter:
+class HistoryWriter(WriterABC):
 
-    def __init__(self,logInterface: LogInterface,dbInterface: _AbstractLocalDatabaseClass) -> None:
+    def __init__(self, logInterface: LogInterface, dbInterface: SQLiteDatabaseInterface) -> None:
         self.logInterface = logInterface
         self.dbInterface = dbInterface
 
-    def writeHistory(self, butch) -> None:
+    async def write(self, butch) -> None:
         self.dbInterface._cursor.executemany(
-            '''INSERT INTO history VALUES (?, ?, ?, ?, ?, ?)''',
+            '''INSERT INTO history (url, title, visit_count,
+            typed, last_visit_date, profile_id) VALUES (?, ?, ?, ?, ?, ?)''',
             butch
         )
         self.dbInterface.Commit()
-        self.logInterface.Info('Группа записей успешно загружена')
+        self.logInterface.Info(type(self), 'Группа записей успешно загружена')
