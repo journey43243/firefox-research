@@ -23,7 +23,6 @@ class HistoryReader(ReaderABC, PathMixin):
 
     def read(self) -> Generator[list[History], None, None]:
         try:
-            print(self.dbInterface._dbPath)
             cursor = self.dbInterface._cursor.execute(
                 '''SELECT url, title, visit_count, typed, last_visit_date FROM moz_places'''
 

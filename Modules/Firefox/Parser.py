@@ -12,19 +12,21 @@ from Modules.Firefox.History.HistoryWriter import HistoryWriter
 
 class Parser:
 
-    def __init__(self, parameters:dict)-> None:
-        print(parameters)
+    def __init__(self, parameters: dict) -> None:
         self.logInterface = parameters['LOG']
         self.caseFolder = parameters['CASEFOLDER']
         self.caseName = parameters['CASENAME']
         self.dbInterface = parameters['DBCONNECTION']
         self.outputFileName = parameters['OUTPUTFILENAME']
         self.outputWriter = parameters['OUTPUTWRITER']
+        self.moduleName = parameters['MODULENAME']
         self.dbWritePath = f'{self.caseFolder}/{self.caseName}/{self.outputFileName}'
 
     async def Start(self):
         if not self.dbInterface.IsConnected():
             return
+
+        HELP_TEXT = self.moduleName + ' Firefox Researching'
 
         profiles = ProfilesReader(self.logInterface, FileContentReader()).getProfiles()
         sqlCreator = SQLiteStarter(self.logInterface, self.dbInterface)
@@ -33,7 +35,7 @@ class Parser:
         historyWriter = HistoryWriter(self.logInterface, self.dbInterface)
         tasks = []
         for id, profilePath in enumerate(profiles):
-            dbIntrefaceRead = SQLiteDatabaseInterface(profilePath + '\places.sqlite', self.logInterface,
+            dbIntrefaceRead = SQLiteDatabaseInterface(profilePath + r'\places.sqlite', self.logInterface,
                                                       'Firefox', False)
             historyReader = HistoryReader(self.logInterface, dbIntrefaceRead, id + 1)
             for batch in historyReader.read():
@@ -41,3 +43,5 @@ class Parser:
                 tasks.append(task)
         if tasks: await asyncio.wait(tasks)
         self.dbInterface.SaveSQLiteDatabaseFromRamToFile()
+
+        return {self.moduleName: self.outputWriter.GetDBName()}
