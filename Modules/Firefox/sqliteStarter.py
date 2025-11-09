@@ -34,7 +34,7 @@ class SQLiteStarter:
     def createHistoryTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE history (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT,
-                title TEXT, visit_count INTEGER, typed INTEGER, last_visit_date INTEGER,
+                title TEXT, visit_count INTEGER, typed INTEGER, last_visit_date text,
                 profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id))
             '''
         )
@@ -51,14 +51,14 @@ class SQLiteStarter:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE bookmarks (id INTEGER PRIMARY KEY, type INTEGER,
             place INTEGER, parent INTEGER, position INTEGER, title TEXT,
-            date_added INTEGER, last_modified INTEGER, FOREIGN KEY(place) REFERENCES history(id))'''
+            date_added text, last_modified text, FOREIGN KEY(place) REFERENCES history(id))'''
         )
         self.logInterface.Info(type(self), 'Таблица с вкладками создана')
     def createExtensionsTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE extensions (id TEXT PRIMARY KEY, name TEXT,
             description TEXT, homepage_url TEXT, creator TEXT, active BOOLEAN,
-            install_date INTEGER, path TEXT, source_uri TEXT, root_uri TEXT,
+            install_date text, path TEXT, source_uri TEXT, root_uri TEXT,
             profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id))'''
         )
         self.logInterface.Info(type(self), 'Таблица с расширениями создана')

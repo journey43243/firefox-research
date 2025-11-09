@@ -1,13 +1,11 @@
 import asyncio
-import datetime
+import inspect
 
 from Common.Routines import SQLiteDatabaseInterface, FileContentReader
-from Interfaces.LogInterface import LogInterface
-from Modules.Firefox.Profiles.ProfilesReader import ProfilesReader
-from Modules.Firefox.Profiles.ProfilesWriter import ProfilesWriter
+from Modules.Firefox.Profiles.Strategy import ProfilesStrategy
+from Modules.Firefox.interfaces.Strategy import StrategyABC
 from Modules.Firefox.sqliteStarter import SQLiteStarter
-from Modules.Firefox.History.HistoryReader import HistoryReader
-from Modules.Firefox.History.HistoryWriter import HistoryWriter
+from Modules.Firefox.History.Strategy import HistoryStrategy
 
 
 class Parser:
@@ -27,21 +25,31 @@ class Parser:
             return
 
         HELP_TEXT = self.moduleName + ' Firefox Researching'
-
-        profiles = ProfilesReader(self.logInterface, FileContentReader()).getProfiles()
         sqlCreator = SQLiteStarter(self.logInterface, self.dbInterface)
         sqlCreator.createAllTables()
-        ProfilesWriter(self.logInterface, self.dbInterface).insertProfiles(profiles)
-        historyWriter = HistoryWriter(self.logInterface, self.dbInterface)
-        tasks = []
-        for id, profilePath in enumerate(profiles):
-            dbIntrefaceRead = SQLiteDatabaseInterface(profilePath + r'\places.sqlite', self.logInterface,
-                                                      'Firefox', False)
-            historyReader = HistoryReader(self.logInterface, dbIntrefaceRead, id + 1)
-            for batch in historyReader.read():
-                task = asyncio.create_task(historyWriter.write(batch))
-                tasks.append(task)
-        if tasks: await asyncio.wait(tasks)
-        self.dbInterface.SaveSQLiteDatabaseFromRamToFile()
 
+        profilesStrategy = ProfilesStrategy(self.logInterface, self.dbInterface)
+        profiles = [profile for profile in profilesStrategy.read()]
+        tasks = []
+        await profilesStrategy.execute(tasks)
+        if tasks: await asyncio.wait(tasks)
+
+
+        for id, profilePath in enumerate(profiles):
+            dbReadIntreface = SQLiteDatabaseInterface(profilePath + r'\places.sqlite', self.logInterface,
+                                                      'Firefox', False)
+            await HistoryStrategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
+            for strategy in StrategyABC.__subclasses__():
+                if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
+                    continue
+                else:
+                    if 'profile_id' in inspect.signature(strategy.__init__):
+                        await strategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
+                    else:
+                        await strategy(self.logInterface, dbReadIntreface, self.dbInterface, None).execute(tasks)
+                    self.logInterface.Info(type(strategy), 'отработала успешно')
+
+        if tasks: await asyncio.wait(tasks)
+
+        self.dbInterface.SaveSQLiteDatabaseFromRamToFile()
         return {self.moduleName: self.outputWriter.GetDBName()}
