@@ -43,10 +43,7 @@ class Parser:
                 if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
                     continue
                 else:
-                    if 'profile_id' in inspect.signature(strategy.__init__):
-                        await strategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
-                    else:
-                        await strategy(self.logInterface, dbReadIntreface, self.dbInterface, None).execute(tasks)
+                    await strategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
                     self.logInterface.Info(type(strategy), 'отработала успешно')
 
         if tasks: await asyncio.wait(tasks)
