@@ -4,7 +4,6 @@ import json
 import ctypes as ct
 import sqlite3
 from base64 import b64decode
-from configparser import ConfigParser
 from getpass import getpass
 from typing import List, Dict, Optional
 
