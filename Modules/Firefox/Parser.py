@@ -1,12 +1,10 @@
 import asyncio
-import inspect
 
-from Common.Routines import SQLiteDatabaseInterface, FileContentReader
+from Common.Routines import SQLiteDatabaseInterface
 from Modules.Firefox.Profiles.Strategy import ProfilesStrategy
 from Modules.Firefox.interfaces.Strategy import StrategyABC
 from Modules.Firefox.sqliteStarter import SQLiteStarter
 from Modules.Firefox.History.Strategy import HistoryStrategy
-
 
 class Parser:
 
@@ -42,9 +40,14 @@ class Parser:
             for strategy in StrategyABC.__subclasses__():
                 if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
                     continue
+                elif strategy.__name__ == 'PasswordStrategy':
+                    await strategy(self.logInterface, dbReadIntreface, self.dbInterface, profilePath).execute(tasks)
+                    self.logInterface.Info(type(strategy), 'отработала успешно')
                 else:
                     await strategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
                     self.logInterface.Info(type(strategy), 'отработала успешно')
+
+
 
         if tasks: await asyncio.wait(tasks)
 

@@ -1,6 +1,7 @@
 *.idea
 *.dat
 *.DAT
+*.venv
 *__pycache__
 Cases/
 Logs/
