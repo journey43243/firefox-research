@@ -3,19 +3,19 @@ from asyncio import Task
 from collections import namedtuple
 from typing import Iterable
 from Modules.Firefox.Passwords.PasswordService import PasswordService
-from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator
+from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator, Metadata
 
 Password = namedtuple('Password', 'url user password profile_id')
 
 class PasswordStrategy(StrategyABC):
 
-    def __init__(self, logInterface, dbReadInterface, dbWriteInterface, profile_path, profile_id) -> None:
-        self._logInterface = logInterface
-        self._dbReadInterface = dbReadInterface
-        self._dbWriteInterface = dbWriteInterface
-        self._profile_path = profile_path
-        self._profile_id = profile_id
-        self._service = PasswordService(profile_path, self._logInterface)
+    def __init__(self, metadata: Metadata) -> None:
+        self._logInterface = metadata.logInterface
+        self._dbReadInterface = metadata.dbReadInterface
+        self._dbWriteInterface = metadata.dbWriteInterface
+        self._profile_id = metadata.profileId
+        self._profile_path = metadata.profilePath
+        self._service = PasswordService(self._profile_path, self._logInterface)
 
     def read(self) -> Generator[list[tuple[str, str, str, int]], None, None]:
         try:
