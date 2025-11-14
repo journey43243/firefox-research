@@ -6,6 +6,7 @@ from Modules.Firefox.Profiles.Strategy import ProfilesStrategy
 from Modules.Firefox.interfaces.Strategy import StrategyABC
 from Modules.Firefox.sqliteStarter import SQLiteStarter
 from Modules.Firefox.History.Strategy import HistoryStrategy
+from Modules.Firefox.Bookmarks.Strategy import BookmarksStrategy
 
 
 class Parser:
@@ -39,9 +40,11 @@ class Parser:
             dbReadIntreface = SQLiteDatabaseInterface(profilePath + r'\places.sqlite', self.logInterface,
                                                       'Firefox', False)
             await HistoryStrategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
+
+            await BookmarksStrategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
             for strategy in StrategyABC.__subclasses__():
-                if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
-                    continue
+                if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy', 'BookmarksStrategy']:
+                    continuegu
                 else:
                     await strategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
                     self.logInterface.Info(type(strategy), 'отработала успешно')
