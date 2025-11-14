@@ -65,8 +65,13 @@ class SQLiteStarter:
 
     def createPasswordsTable(self) -> None:
         self.dbInterface.ExecCommit(
-            '''CREATE TABLE passwords (url TEXT, user INTEGER, password TEXT,
-            PRIMARY KEY (url, user),FOREIGN KEY (user) REFERENCES profiles(id));'''
+            '''CREATE TABLE IF NOT EXISTS passwords (
+                url TEXT,
+                user TEXT,
+                password TEXT,
+                profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id),
+                UNIQUE(url, user, password)
+            )'''
         )
-        self.dbInterface.ExecCommit('''CREATE INDEX idx_url_profile_id ON passwords(url, profile_id)''')
+        self.dbInterface.ExecCommit('''CREATE INDEX idx_url_profile_id ON passwords(url, user)''')
         self.logInterface.Info(type(self), 'Таблица с паролями успешно создана')
