@@ -44,7 +44,7 @@ class Parser:
             await BookmarksStrategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
             for strategy in StrategyABC.__subclasses__():
                 if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy', 'BookmarksStrategy']:
-                    continuegu
+                    continue
                 else:
                     await strategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
                     self.logInterface.Info(type(strategy), 'отработала успешно')
