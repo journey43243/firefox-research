@@ -37,10 +37,10 @@ class Parser:
         for id, profilePath in enumerate(profiles):
             dbReadIntreface = SQLiteDatabaseInterface(profilePath + r'\places.sqlite', self.logInterface,
                                                       'Firefox', False)
-            await PasswordStrategy(self.logInterface, dbReadIntreface, self.dbInterface, profilePath).execute(tasks)
+            await PasswordStrategy(self.logInterface, dbReadIntreface, self.dbInterface, profilePath, id + 1).execute(tasks)
             await HistoryStrategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)
             for strategy in StrategyABC.__subclasses__():
-                if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
+                if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy', 'PasswordStrategy']:
                     continue
                 else:
                     await strategy(self.logInterface, dbReadIntreface, self.dbInterface, id + 1).execute(tasks)

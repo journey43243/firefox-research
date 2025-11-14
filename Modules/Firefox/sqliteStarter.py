@@ -69,8 +69,9 @@ class SQLiteStarter:
                 url TEXT,
                 user TEXT,
                 password TEXT,
+                profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id),
                 UNIQUE(url, user, password)
-            );'''
+            )'''
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_url_profile_id ON passwords(url, user)''')
         self.logInterface.Info(type(self), 'Таблица с паролями успешно создана')

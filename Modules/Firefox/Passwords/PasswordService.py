@@ -2,10 +2,11 @@ import os
 import sys
 import json
 import ctypes as ct
-import sqlite3
 from base64 import b64decode
 from getpass import getpass
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
+
+from Common.Routines import SQLiteDatabaseInterfaceReader
 
 
 class SECItem(ct.Structure):
@@ -109,9 +110,10 @@ class NSSWrapper:
 
 
 class PasswordService:
-    def __init__(self, profile_path: str):
+    def __init__(self, profile_path: str, log:Any):
         self.profile_path = profile_path
         self.nss = NSSWrapper()
+        self._logger = log
 
     def _read_logins_json(self) -> Optional[List[Dict]]:
         path = os.path.join(self.profile_path, "logins.json")
@@ -125,11 +127,14 @@ class PasswordService:
         path = os.path.join(self.profile_path, "signons.sqlite")
         if not os.path.isfile(path):
             return None
-        con = sqlite3.connect(path)
-        cur = con.cursor()
-        cur.execute("SELECT hostname, encryptedUsername, encryptedPassword FROM moz_logins")
-        rows = cur.fetchall()
-        con.close()
+        db = SQLiteDatabaseInterfaceReader(path, self._logger)
+        try:
+            rows = db.Fetch("SELECT hostname, encryptedUsername, encryptedPassword FROM moz_logins")
+        except Exception as e:
+            self._log.Warn("ReaderClass", f"Ошибка чтения signons.sqlite: {e}")
+            rows = []
+        finally:
+            db.CloseConnection()
         return [{"hostname": h, "encryptedUsername": u, "encryptedPassword": p} for h, u, p in rows]
 
     def get_passwords(self) -> List[Dict[str, str]]:
