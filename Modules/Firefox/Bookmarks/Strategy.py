@@ -4,21 +4,21 @@ from asyncio import Task
 from collections import namedtuple
 from typing import Iterable
 
-from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator
+from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator, Metadata
 
 Bookmark = namedtuple(
     'Bookmark',
-    'id type place parent position title date_added last_modified'
+    'id type fk parent position title date_added last_modified'
 )
 
 
 class BookmarksStrategy(StrategyABC):
 
-    def __init__(self, logInterface, dbReadInterface, dbWriteInterface, profile_id) -> None:
-        self._logInterface = logInterface
-        self._dbReadInterface = dbReadInterface
-        self._dbWriteInterface = dbWriteInterface
-        self._profile_id = profile_id
+    def __init__(self, metadata: Metadata) -> None:
+        self._logInterface = metadata.logInterface
+        self._dbReadInterface = metadata.dbReadInterface
+        self._dbWriteInterface = metadata.dbWriteInterface
+        self._profile_id = metadata.profileId
 
     def read(self) -> Generator[list[Bookmark], None, None]:
         try:
@@ -39,24 +39,17 @@ class BookmarksStrategy(StrategyABC):
                                     f'Закладки для профиля {self._profile_id} не могут быть считаны (не активен или таблица отсутствует): {e}')
 
     async def write(self, butch: Iterable[tuple]) -> None:
-        try:
-            self._dbWriteInterface._cursor.executemany(
-                '''INSERT INTO bookmarks (id, type, place, parent, position, 
-                       title, date_added, last_modified) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                butch
-            )
-            self._dbWriteInterface.Commit()
-            self._logInterface.Info(type(self), 'Группа закладок успешно загружена')
-        except Exception as e:
-            self._logInterface.Error(type(self), f'Ошибка при записи закладок: {e}')
+        self._dbWriteInterface._cursor.executemany(
+            '''INSERT INTO bookmarks (id, type, place, parent, position, 
+                   title, date_added, last_modified) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+            butch
+        )
+        self._dbWriteInterface.Commit()
+        self._logInterface.Info(type(self), 'Группа закладок успешно загружена')
 
     async def execute(self, tasks: list[Task]) -> None:
-        bookmarks_count = 0
         for batch in self.read():
-            bookmarks_count += len(batch)
             task = asyncio.create_task(self.write(batch))
             tasks.append(task)
 
-        self._logInterface.Info(type(self),
-                                f'Всего обработано {bookmarks_count} закладок для профиля {self._profile_id}')
