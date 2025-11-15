@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from asyncio import Task
+from collections import namedtuple
 from typing import Generator, Iterable
 
+Metadata = namedtuple('Metadata',
+                      'logInterface dbReadInterface dbWriteInterface profileId profilePath')
 
 class StrategyABC(ABC):
 

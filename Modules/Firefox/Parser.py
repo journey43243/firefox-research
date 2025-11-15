@@ -5,8 +5,6 @@ from Modules.Firefox.Profiles.Strategy import ProfilesStrategy
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
 from Modules.Firefox.sqliteStarter import SQLiteStarter
 from Modules.Firefox.History.Strategy import HistoryStrategy
-from Modules.Firefox.Passwords.Strategy import PasswordStrategy
-from Modules.Firefox.Downloads.Strategy import DownloadsStrategy
 
 class Parser:
 
