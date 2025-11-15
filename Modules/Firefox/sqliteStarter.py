@@ -1,7 +1,9 @@
 from Common.Routines import SQLiteDatabaseInterface
 from Interfaces.LogInterface import LogInterface
 
+
 class SQLiteStarter:
+
     def __init__(self, logInterface: LogInterface, dbInterface: SQLiteDatabaseInterface) -> None:
         self.logInterface = logInterface
         self.dbInterface = dbInterface
@@ -21,22 +23,25 @@ class SQLiteStarter:
                 if callable(method):
                     method()
 
+
     def createProfilesTable(self) -> None:
         self.dbInterface.ExecCommit(
-            '''CREATE TABLE profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
+            '''CREATE TABLE profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)
+            '''
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_profiles_path on profiles (path)''')
         self.logInterface.Info(type(self), 'Таблица с профилями создана.')
-    
+
     def createHistoryTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE history (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT,
                 title TEXT, visit_count INTEGER, typed INTEGER, last_visit_date text,
-                profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id))'''
+                profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id))
+            '''
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_history_url on history (url)''')
         self.logInterface.Info(type(self), 'Таблица с историей создана')
-    
+
     def createDownloadsTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE downloads (id PRIMARY KEY, place_id INTEGER,
@@ -44,7 +49,7 @@ class SQLiteStarter:
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_downloads_place_id on downloads (place_id)''')
         self.logInterface.Info(type(self), 'Таблица с загрузками создана')
-    
+
     def createBookmarksTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE bookmarks (id INTEGER PRIMARY KEY, type INTEGER,
@@ -52,7 +57,7 @@ class SQLiteStarter:
             date_added text, last_modified text, FOREIGN KEY(place) REFERENCES history(id))'''
         )
         self.logInterface.Info(type(self), 'Таблица с вкладками создана')
-    
+
     def createPasswordsTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE IF NOT EXISTS passwords (
@@ -65,7 +70,7 @@ class SQLiteStarter:
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_url_profile_id ON passwords(url, user)''')
         self.logInterface.Info(type(self), 'Таблица с паролями успешно создана')
-    
+
     def createExtensionsTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE IF NOT EXISTS extensions (
