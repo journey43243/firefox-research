@@ -8,7 +8,7 @@ from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator, Metadata
 
 Bookmark = namedtuple(
     'Bookmark',
-    'id type fk parent position title date_added last_modified'
+    'id type fk parent position title date_added last_modified profile_id'
 )
 
 
@@ -27,29 +27,30 @@ class BookmarksStrategy(StrategyABC):
                           datetime(dateAdded / 1000000, 'unixepoch') as date_added,
                           datetime(lastModified / 1000000, 'unixepoch') as last_modified
                    FROM moz_bookmarks 
-                   WHERE type = 1'''  # type=1 - закладки (исключаем папки и разделители)
+                   WHERE type = 1'''
             )
             while True:
                 batch = cursor.fetchmany(500)
                 if not batch:
                     break
-                yield [Bookmark(*row) for row in batch]
+                yield [Bookmark(*row, profile_id=self._profile_id) for row in batch]
         except sqlite3.OperationalError as e:
             self._logInterface.Warn(type(self),
-                                    f'Закладки для профиля {self._profile_id} не могут быть считаны (не активен или таблица отсутствует): {e}')
+                                    f'Закладки для профиля {self._profile_id} не могут быть считаны: {e}')
 
     async def write(self, butch: Iterable[tuple]) -> None:
         self._dbWriteInterface._cursor.executemany(
-            '''INSERT INTO bookmarks (id, type, place, parent, position, 
-                   title, date_added, last_modified) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+            '''INSERT OR REPLACE INTO bookmarks 
+               (id, type, place, parent, position, title, date_added, last_modified, profile_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             butch
         )
         self._dbWriteInterface.Commit()
-        self._logInterface.Info(type(self), 'Группа закладок успешно загружена')
+        self._logInterface.Info(type(self), f'Группа из {len(butch)} закладок успешно загружена')
 
     async def execute(self, tasks: list[Task]) -> None:
         for batch in self.read():
             task = asyncio.create_task(self.write(batch))
             tasks.append(task)
+            await task
 
