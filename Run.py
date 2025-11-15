@@ -17,19 +17,14 @@ class ExitStatus():
 #--------------------------------------------------------------------------------
 def main() -> NoReturn:
     exitStatus:ExitStatus = ExitStatus()
-    # Исправленная строка - создаем новый event loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
+    loop:'asyncio.windows_events.ProactorEventLoop' = asyncio.get_event_loop()
     appEntryPoint:Interface = Interface()
     # Обеспечиваем асинхронный цикл работы
     try:
-        loop.run_until_complete(appEntryPoint.Run(exitStatus)) 
+        loop.run_until_complete(appEntryPoint.Run(exitStatus))
         sys.exit(exitStatus.status)
     except asyncio.exceptions.CancelledError:
         sys.exit(ExitCode.AsyncStartError.value)
-    finally:
-        loop.close()
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
     main()
