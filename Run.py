@@ -21,10 +21,10 @@ def main() -> NoReturn:
     appEntryPoint:Interface = Interface()
     # Обеспечиваем асинхронный цикл работы
     try:
-        loop.run_until_complete(appEntryPoint.Run(exitStatus)) 
+        loop.run_until_complete(appEntryPoint.Run(exitStatus))
         sys.exit(exitStatus.status)
     except asyncio.exceptions.CancelledError:
         sys.exit(ExitCode.AsyncStartError.value)
 
-if __name__ == '__main__': 
-    main()               
+if __name__ == '__main__':
+    main()

@@ -31,6 +31,7 @@ class SQLiteStarter:
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_profiles_path on profiles (path)''')
         self.logInterface.Info(type(self), 'Таблица с профилями создана.')
+
     def createHistoryTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE history (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT,
@@ -40,6 +41,7 @@ class SQLiteStarter:
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_history_url on history (url)''')
         self.logInterface.Info(type(self), 'Таблица с историей создана')
+
     def createDownloadsTable(self) -> None:
         self.dbInterface.ExecCommit(
             '''CREATE TABLE downloads (id PRIMARY KEY, place_id INTEGER,
@@ -56,14 +58,6 @@ class SQLiteStarter:
             PRIMARY KEY (id, profile_id))'''
         )
         self.logInterface.Info(type(self), 'Таблица с вкладками создана')
-    def createExtensionsTable(self) -> None:
-        self.dbInterface.ExecCommit(
-            '''CREATE TABLE extensions (id TEXT PRIMARY KEY, name TEXT,
-            description TEXT, homepage_url TEXT, creator TEXT, active BOOLEAN,
-            install_date text, path TEXT, source_uri TEXT, root_uri TEXT,
-            profile_id INTEGER, FOREIGN KEY(profile_id) REFERENCES profiles(id))'''
-        )
-        self.logInterface.Info(type(self), 'Таблица с расширениями создана')
 
     def createPasswordsTable(self) -> None:
         self.dbInterface.ExecCommit(
@@ -77,3 +71,27 @@ class SQLiteStarter:
         )
         self.dbInterface.ExecCommit('''CREATE INDEX idx_url_profile_id ON passwords(url, user)''')
         self.logInterface.Info(type(self), 'Таблица с паролями успешно создана')
+
+    def createExtensionsTable(self) -> None:
+        self.dbInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS extensions (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                version TEXT,
+                description TEXT,
+                type TEXT,
+                active INTEGER,
+                user_disabled INTEGER,
+                install_date INTEGER,
+                update_date INTEGER,
+                path TEXT,
+                source_url TEXT,
+                permissions TEXT,
+                location TEXT,
+                profile_id INTEGER,
+                FOREIGN KEY(profile_id) REFERENCES profiles(id)
+            )'''
+        )
+        self.dbInterface.ExecCommit('''CREATE INDEX IF NOT EXISTS idx_extensions_id ON extensions (id)''')
+        self.dbInterface.ExecCommit('''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON extensions (profile_id)''')
+        self.logInterface.Info(type(self), 'Таблица с расширениями создана')
