@@ -52,9 +52,10 @@ class SQLiteStarter:
 
     def createBookmarksTable(self) -> None:
         self.dbInterface.ExecCommit(
-            '''CREATE TABLE bookmarks (id INTEGER PRIMARY KEY, type INTEGER,
-            place INTEGER, parent INTEGER, position INTEGER, title TEXT,
-            date_added text, last_modified text, FOREIGN KEY(place) REFERENCES history(id))'''
+            '''CREATE TABLE bookmarks (id INTEGER, type INTEGER, place INTEGER,
+            parent INTEGER, position INTEGER, title TEXT,
+            date_added text, last_modified text, profile_id INTEGER,
+            PRIMARY KEY (id, profile_id))'''
         )
         self.logInterface.Info(type(self), 'Таблица с вкладками создана')
 
