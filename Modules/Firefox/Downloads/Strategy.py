@@ -2,9 +2,10 @@ import asyncio
 import sqlite3
 from asyncio import Task
 from collections import namedtuple
+from importlib.metadata import metadata
 from typing import Iterable, Generator
 
-from Modules.Firefox.interfaces.Strategy import StrategyABC
+from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
 
 
 # Именованный кортеж для удобства маппинга полей (tuple-поведение подходит для executemany)
@@ -18,11 +19,11 @@ class DownloadsStrategy(StrategyABC):
     При отсутствии таблиц возвращает пустой генератор.
     """
 
-    def __init__(self, logInterface, dbReadInterface, dbWriteInterface, profile_id) -> None:
-        self._logInterface = logInterface
-        self._dbReadInterface = dbReadInterface
-        self._dbWriteInterface = dbWriteInterface
-        self._profile_id = profile_id
+    def __init__(self, metadata: Metadata) -> None:
+        self._logInterface = metadata.logInterface
+        self._dbReadInterface = metadata.dbReadInterface
+        self._dbWriteInterface = metadata.dbWriteInterface
+        self._profile_id = metadata.profileId
 
     def read(self) -> Generator[list[Download], None, None]:
         try:
