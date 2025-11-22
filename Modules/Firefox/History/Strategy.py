@@ -32,7 +32,7 @@ class HistoryStrategy(StrategyABC):
         except sqlite3.OperationalError:
             self._logInterface.Warn(type(self), f'{self._profile_id} не может быт считан (не активен)')
 
-    async def write(self, butch: Iterable[tuple]) -> None:
+    def write(self, butch: Iterable[tuple]) -> None:
         self._dbWriteInterface._cursor.executemany(
             '''INSERT INTO history (url, title, visit_count,
             typed, last_visit_date, profile_id) VALUES (?, ?, ?, ?, ?, ?)''',
@@ -41,7 +41,6 @@ class HistoryStrategy(StrategyABC):
         self._dbWriteInterface.Commit()
         self._logInterface.Info(type(self), 'Группа записей успешно загружена')
 
-    async def execute(self, tasks:list[Task]) -> None:
-        for batch in self.read():
-            task = asyncio.create_task(self.write(batch))
-            tasks.append(task)
+    def execute(self) -> None:
+        for butch in self.read():
+            self.write(butch)

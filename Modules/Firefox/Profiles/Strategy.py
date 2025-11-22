@@ -38,14 +38,13 @@ class ProfilesStrategy(StrategyABC, PathMixin):
                 yield self.folderPath + '\\' + row
         self._logInterface.Info(type(self), f"Считано {profilesCnt} профилей")
 
-    async def write(self, butch: list[str]) -> None:
+    def write(self, butch: list[str]) -> None:
         for record in butch:
             self._dbWriteInterface.ExecCommit(
                 '''INSERT INTO profiles (path) VALUES (?)''', (record, )
             )
         self._logInterface.Info(type(self),'Все профили загружены в таблицу')
 
-    async def execute(self, tasks: list[Task]) -> None:
+    def execute(self) -> None:
         profiles = [profile for profile in self.read()]
-        task = asyncio.create_task(self.write(profiles))
-        tasks.append(task)
+        self.write(profiles)

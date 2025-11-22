@@ -38,7 +38,7 @@ class BookmarksStrategy(StrategyABC):
             self._logInterface.Warn(type(self),
                                     f'Закладки для профиля {self._profile_id} не могут быть считаны: {e}')
 
-    async def write(self, butch: Iterable[tuple]) -> None:
+    def write(self, butch: Iterable[tuple]) -> None:
         self._dbWriteInterface._cursor.executemany(
             '''INSERT OR REPLACE INTO bookmarks 
                (id, type, place, parent, position, title, date_added, last_modified, profile_id)
@@ -48,9 +48,6 @@ class BookmarksStrategy(StrategyABC):
         self._dbWriteInterface.Commit()
         self._logInterface.Info(type(self), f'Группа из {len(butch)} закладок успешно загружена')
 
-    async def execute(self, tasks: list[Task]) -> None:
+    def execute(self) -> None:
         for batch in self.read():
-            task = asyncio.create_task(self.write(batch))
-            tasks.append(task)
-            await task
-
+            self.write(batch)
