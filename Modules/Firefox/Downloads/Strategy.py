@@ -2,6 +2,7 @@ import asyncio
 import sqlite3
 from asyncio import Task
 from collections import namedtuple
+from concurrent.futures.thread import ThreadPoolExecutor
 from importlib.metadata import metadata
 from typing import Iterable, Generator
 
@@ -44,7 +45,7 @@ class DownloadsStrategy(StrategyABC):
             self._logInterface.Warn(type(self),
                                     f'Загрузки для профиля {self._profile_id} не могут быть считаны (таблица отсутствует или БД не доступна): {e}')
 
-    async def write(self, batch: Iterable[Download]) -> None:
+    def write(self, batch: Iterable[Download]) -> None:
         try:
             params = [tuple(item) for item in list(batch)]
             if not params:
@@ -60,7 +61,6 @@ class DownloadsStrategy(StrategyABC):
         except Exception as e:
             self._logInterface.Error(type(self), f'Ошибка при записи загрузок: {e}')
 
-    async def execute(self, tasks: list[Task]) -> None:
+    def execute(self, executor: ThreadPoolExecutor) -> None:
         for batch in self.read():
-            task = asyncio.create_task(self.write(batch))
-            tasks.append(task)
+            executor.submit(self.write,batch)

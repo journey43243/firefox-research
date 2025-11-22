@@ -3,6 +3,7 @@ import json
 import os
 from asyncio import Task
 from collections import namedtuple
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable, Generator
 
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
@@ -66,7 +67,7 @@ class ExtensionsStrategy(StrategyABC):
         except Exception as e:
             self._logInterface.Error(type(self), f'Ошибка чтения расширений: {str(e)}')
 
-    async def write(self, batch: Iterable[Extension]) -> None:
+    def write(self, batch: Iterable[Extension]) -> None:
         #Запись расширений в базу данных
         try:
             self._dbWriteInterface._cursor.executemany(
@@ -81,8 +82,7 @@ class ExtensionsStrategy(StrategyABC):
         except Exception as e:
             self._logInterface.Error(type(self), f'Ошибка записи расширений: {str(e)}')
 
-    async def execute(self, tasks: list[Task]) -> None:
+    def execute(self, executor: ThreadPoolExecutor) -> None:
         for batch in self.read():
             if batch:  # Проверяем, что батч не пустой
-                task = asyncio.create_task(self.write(batch))
-                tasks.append(task)
+                executor.submit(self.write,batch)

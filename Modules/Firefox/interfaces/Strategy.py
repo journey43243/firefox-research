@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from asyncio import Task
 from collections import namedtuple
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Generator, Iterable
 
 Metadata = namedtuple('Metadata',
@@ -13,9 +13,9 @@ class StrategyABC(ABC):
         pass
 
     @abstractmethod
-    async def write(self, butch: Iterable) -> None:
+    def write(self, butch: Iterable) -> None:
         pass
 
     @abstractmethod
-    async def execute(self, tasks: list[Task]) -> None:
+    def execute(self, threadPool: ThreadPoolExecutor) -> None:
         pass
