@@ -1,12 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-Модуль обработки записей реестра веток Persisted и Store 
-ветки Compatibility Assistant
+Модуль извлечения данных о совместимости приложений (Compatibility Assistant)
 
+Этот модуль обрабатывает записи реестра Windows из веток:
+- Persisted: Windows 7 и Server 2008 R2 (без временных меток)
+- Store: Windows 8.1, 10 и Server 2012+ (с временными метками)
+
+Данные содержат историю приложений, которые были запущены в режиме совместимости
+или с применением пользовательских режимов разрешения проблем.
+
+Типовые расположения:
+    HKU\SID\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Persisted (Win7)
+    HKU\SID\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store (Win8+)
+
+Эти данные полезны для судебно-технического анализа (forensics):
+- Определение используемых приложений
+- История запусков в режиме совместимости
+- Временные метки (в Store)
+- Путь к приложениям
 """
-import re,regipy,itertools,os
+import re, regipy, itertools, os
 from abc import ABCMeta, abstractmethod
-from typing import Tuple,Optional,Awaitable,NoReturn,Callable,Any,List,AnyStr,AsyncGenerator,Dict
+from typing import Tuple, Optional, Awaitable, NoReturn, Callable, Any, List, AnyStr, AsyncGenerator, Dict
 
 from Common.Routines import TimeConverter
 from Common.Routines import FixedOffset as tzInfo
@@ -15,17 +30,41 @@ from Modules.CompatibilityAssistant.SACPStructure import SACPStructure
 
 #----------------------------------------------------------------------
 class _CompatibilityAssistantParser():
+    """
+    Абстрактный парсер для извлечения данных Compatibility Assistant.
+    
+    Основная логика обработки реестра Windows и преобразования данных.
+    Содержит методы для:
+    - Чтения веток Persisted и Store
+    - Парсинга путей к приложениям (UTF-16LE конверсия)
+    - Парсинга структуры SACP с временными метками
+    - Преобразования временных меток из FILETIME формата
+    
+    Атрибуты:
+        _storage (str): Путь к папке Source с исходными данными
+        _rfh (Any): Обработчик файлов реестра Windows
+        _record (dict): Текущая запись для записи в БД
+        _profileList (list): Список профилей пользователей
+        _currentTzInfo (tzInfo): Текущая информация о часовом поясе
+    """
     __metaclass__ = ABCMeta
-    def __init__(self,parserParameters:dict,recordFields:dict):
+    def __init__(self, parserParameters: dict, recordFields: dict):
+        """
+        Инициализирует парсер Compatibility Assistant.
+        
+        Args:
+            parserParameters (dict): Параметры модуля от Solver
+            recordFields (dict): Определение полей для таблицы БД
+        """
         # Входные параметры
-        self._redrawUI:Callable = parserParameters.get('UIREDRAW')
-        self._rfh:Any = parserParameters.get('REGISTRYFILEHANDLER')
-        self._standaloneFiles:bool = True # ! оставлять как True
-        self._storage:str = parserParameters.get('STORAGE')
+        self._redrawUI: Callable = parserParameters.get('UIREDRAW')
+        self._rfh: Any = parserParameters.get('REGISTRYFILEHANDLER')
+        self._standaloneFiles: bool = True  # ! оставлять как True
+        self._storage: str = parserParameters.get('STORAGE')
  
-         # Запись в БД
-        self._record:dict = {}
-        for k,v in recordFields.items():
+        # Инициализация словаря записей в БД с типами по умолчанию
+        self._record: dict = {}
+        for k, v in recordFields.items():
             if v == 'TEXT':
                 self._record[k] = ''
             elif v == 'INTEGER' or v == 'INTEGER UNSIGNED':
@@ -33,32 +72,52 @@ class _CompatibilityAssistantParser():
             else:
                 self._record[k] = ''
         
-        self._profileList:list = None
-        self._tc:Any = TimeConverter()
+        self._profileList: list = None
+        self._tc: Any = TimeConverter()
+        
+        # Инициализация информации о часовом поясе
         if not self._standaloneFiles:
             self._tzInfoHandler = parserParameters.get('TIMEZONEINFOHANDLER')
-            self._tzInfoStruct =  self._tzInfoHandler.Start()
-            self._currentTzInfo:tzInfo = tzInfo(self._tzInfoStruct.activeTimeBias,
+            self._tzInfoStruct = self._tzInfoHandler.Start()
+            self._currentTzInfo: tzInfo = tzInfo(self._tzInfoStruct.activeTimeBias,
                                         self._tzInfoStruct.timeZoneKeyName)
-
             self._record['TimeZoneOffset'] = self._tzInfoStruct.activeTimeBias
         else:
-            self._currentTzInfo:tzInfo = tzInfo(300, # Часовой пояс ЕКБ в минутах
+            # Используется часовой пояс по умолчанию (ЕКБ - UTC+5)
+            self._currentTzInfo: tzInfo = tzInfo(300,  # Часовой пояс ЕКБ в минутах
                                         'Asia/Yekaterinburg')
-
             self._record['TimeZoneOffset'] = 300
         
         
-    def SetUserProfilesList(self,userProfilesList:list) -> NoReturn:
+    def SetUserProfilesList(self, userProfilesList: list) -> NoReturn:
+        """
+        Устанавливает список профилей пользователей для обработки.
+        
+        Args:
+            userProfilesList (list): Список профилей (SID: userInfo pairs)
+        """
         self._profileList = userProfilesList
     
-    async def _GetInfo(self, data:dict) -> Optional[List]:
+    async def _GetInfo(self, data: dict) -> Optional[List]:
         """
-        В 7 :  
-            HKU\SID\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Persisted            
+        Главный метод для извлечения данных из реестра Windows.
         
-        В 8.1 и далее:  
-            HKU\SID\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Compatibility Assistant\Store           
+        Обрабатывает файл ntuser.dat для каждого пользователя и извлекает:
+        1. Имя пользователя из Volatile Environment
+        2. Ветку Persisted (Windows 7)
+        3. Ветку Store (Windows 8+) с временными метками SACP
+        
+        Структура ключей реестра:
+        Win 7:
+            HKU\\SID\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Compatibility Assistant\\Persisted            
+        Win 8.1+:
+            HKU\\SID\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Compatibility Assistant\\Store           
+        
+        Args:
+            data (dict): Информация о профиле пользователя или None для текущего пользователя
+        
+        Returns:
+            Optional[List]: Список извлеченных записей о совместимости приложений
         """
         ntUserDatPath:str = None
         ntUserDatReg:Any = None
@@ -120,33 +179,69 @@ class _CompatibilityAssistantParser():
                     
         await self._redrawUI(f'Пользователи Windows: CompatibilityAssistant пользователя {self._record["UserName"]}',100)
         return result
-    
     def _ClearRecord(self) -> NoReturn:
+        """
+        Сбрасывает данные текущей записи перед обработкой новой.
+        
+        Очищает поля: FullPath, DateTime_UTC, Timestamp_UTC, DateTime_Local
+        """
         self._record['FullPath'] = ''
         self._record['DateTime_UTC'] = ''
         self._record['Timestamp_UTC'] = 0
         self._record['DateTime_Local'] = ''
         
-    def _CheckUTF16LEEncoding(self,record) -> AnyStr:
-        if re.match('[A-Z]\x00\:.*',record,flags = re.IGNORECASE) is not None:
+    def _CheckUTF16LEEncoding(self, record) -> AnyStr:
+        """
+        Проверяет и конвертирует UTF-16LE кодировку если нужна.
+        
+        В реестре пути к приложениям иногда хранятся в UTF-16LE вместо обычной строки.
+        Эта функция определяет это и конвертирует при необходимости.
+        
+        Args:
+            record (Any): Значение из реестра для проверки
+        
+        Returns:
+            AnyStr: Исходная строка или декодированная UTF-16LE
+        """
+        if re.match('[A-Z]\x00\:.*', record, flags=re.IGNORECASE) is not None:
             try:
-                recordByteArray = record.encode('utf-8',errors='strict')
+                recordByteArray = record.encode('utf-8', errors='strict')
             except UnicodeError:
                 return record    
-            record = recordByteArray.decode('utf-16le',errors='ignore')
+            record = recordByteArray.decode('utf-16le', errors='ignore')
             return record
         else:
             return record
         
-    def _ParsePersisted(self,reg) -> Optional[List]:
-        result:list = []
+    def _ParsePersisted(self, reg) -> Optional[List]:
+        """
+        Парсит ветку Persisted (Windows 7).
+        
+        В Windows 7 Persisted ветка содержит только пути к приложениям без
+        временных меток. Каждое значение - это путь к exe файлу, который был
+        запущен в режиме совместимости.
+        
+        Процесс парсинга:
+        1. Читает все значения из ветки
+        2. Декодирует UTF-16LE если необходимо
+        3. Удаляет специальные символы (@, ")
+        4. Формирует кортежи (UserName, Path, DateTime_UTC, Timestamp_UTC, DateTime_Local, DataSource, TimeZoneOffset=0)
+        5. Возвращает список записей
+        
+        Args:
+            reg (Any): Объект ветки реестра Persisted
+        
+        Returns:
+            Optional[List]: Список кортежей с информацией о приложениях
+        """
+        result: list = []
         # Обработать ключи реестра
         for item in reg.get_values():
             self._record['FullPath'] = item.name
             # Определить нет ли utf-16le вместо utf-8
             self._record['FullPath'] = self._CheckUTF16LEEncoding(self._record['FullPath'])
             # Убрать @ и " и обернуть слэши для проверки через re
-            self._record['FullPath'] = self._record['FullPath'].replace('@','').replace('"','')
+            self._record['FullPath'] = self._record['FullPath'].replace('@', '').replace('"', '')
                
             if self._record['FullPath'] is not None:
                 
@@ -165,15 +260,39 @@ class _CompatibilityAssistantParser():
             
         return result
     
-    def _ParseStore(self,reg) -> Optional[List]:
-        result:list = []
-        value:bytearray = None
+    def _ParseStore(self, reg) -> Optional[List]:
+        """
+        Парсит ветку Store (Windows 8.1+).
+        
+        В Windows 8.1 и более новых версиях Store ветка содержит пути к приложениям
+        с временными метками в структуре SACP (Signature ACCP 0x40435341).
+        
+        Процесс парсинга:
+        1. Читает все значения из ветки
+        2. Каждое значение - это бинарные данные в виде структуры SACP
+        3. Парсит структуру SACP для извлечения временной метки (FILETIME формат)
+        4. Конвертирует FILETIME в UTC и локальное время
+        5. Формирует кортежи с полной информацией
+        
+        Структура SACP:
+            - Сигнатура (4 байта): 0x53 0x41 0x43 0x50 (SACP)
+            - Неизвестные данные (40 байт)
+            - Временная метка (8 байт): FILETIME формат
+        
+        Args:
+            reg (Any): Объект ветки реестра Store
+        
+        Returns:
+            Optional[List]: Список кортежей с информацией о приложениях и временными метками
+        """
+        result: list = []
+        value: bytearray = None
         for item in reg.get_values():
             self._record['FullPath'] = item.name
             # Определить нет ли utf-16le вместо utf-8
             self._record['FullPath'] = self._CheckUTF16LEEncoding(self._record['FullPath'])
             # Убрать @ и " и обернуть слэши для проверки через re
-            self._record['FullPath'] = self._record['FullPath'].replace('@','').replace('"','')
+            self._record['FullPath'] = self._record['FullPath'].replace('@', '').replace('"', '')
 
             
             value = bytearray(item.value)
@@ -188,7 +307,7 @@ class _CompatibilityAssistantParser():
                 # Структура не описана до конца, бывают кривые значения
                 self._record['DateTime_UTC'] = ''
             try:
-                self._record['DateTime_Local'] = self._tc.GetTimeInSoftwareFormat(self._tc.FILETIMEToDatetime(self._record['Timestamp_UTC'],self._currentTzInfo))                    
+                self._record['DateTime_Local'] = self._tc.GetTimeInSoftwareFormat(self._tc.FILETIMEToDatetime(self._record['Timestamp_UTC'], self._currentTzInfo))                    
             except OSError:
                 # Структура не описана до конца, бывают кривые значения
                 self._record['DateTime_Local'] = ''
@@ -211,9 +330,20 @@ class _CompatibilityAssistantParser():
         return result
           
     async def Start(self) -> AsyncGenerator:
+        """
+        Главный асинхронный метод для запуска парсера.
+        
+        Координирует процесс извлечения данных:
+        1. Итерирует по всем профилям пользователей (если не standalone)
+        2. Для каждого профиля вызывает _GetInfo()
+        3. Возвращает результаты через yield
+        
+        Yields:
+            List: Результаты парсинга для каждого профиля
+        """
         if not self._standaloneFiles:
             if self._profileList is not None:
-                for sid,userInfo in self._profileList.items():
+                for sid, userInfo in self._profileList.items():
                     yield await self._GetInfo(userInfo)
         else:
             yield await self._GetInfo(None)
@@ -221,59 +351,138 @@ class _CompatibilityAssistantParser():
 
 #----------------------------------------------------------------------
 class _CompatibilityAssistantParser_V1(_CompatibilityAssistantParser):
-    # 7 и Server2008R2
-    def __init__(self,parserParameters,recordFields):
-        super().__init__(parserParameters,recordFields)
+    """
+    Версионный парсер для Windows 7 и Server 2008 R2.
+    
+    Использует ветку Persisted без временных меток.
+    """
+    def __init__(self, parserParameters, recordFields):
+        """
+        Инициализирует парсер V1.
+        
+        Args:
+            parserParameters (dict): Параметры модуля
+            recordFields (dict): Определение полей БД
+        """
+        super().__init__(parserParameters, recordFields)
             
 #----------------------------------------------------------------------
 class _CompatibilityAssistantParser_V2(_CompatibilityAssistantParser):
-    #  8, 8.1, 10, Server2012, Server2012R2, Server2016
-    def __init__(self,parserParameters,recordFields):
-        super().__init__(parserParameters,recordFields)
+    """
+    Версионный парсер для Windows 8, 8.1, 10, Server 2012, Server 2012R2, Server 2016+.
+    
+    Использует ветку Store с временными метками (структура SACP).
+    """
+    def __init__(self, parserParameters, recordFields):
+        """
+        Инициализирует парсер V2.
+        
+        Args:
+            parserParameters (dict): Параметры модуля
+            recordFields (dict): Определение полей БД
+        """
+        super().__init__(parserParameters, recordFields)
             
 #----------------------------------------------------------------------
 class Parser():
-    def __init__(self,parameters:dict):  
-        self.__parameters:dict = parameters 
-        self.__recordFields:dict = {
-            'UserName':'TEXT',
-            'FullPath':'TEXT',
-            'DateTime_UTC':'TEXT',
-            'Timestamp_UTC':'INTEGER',
-            'DateTime_Local':'TEXT',
-            'DataSource':'TEXT',
-            'TimeZoneOffset':'INTEGER'
+    """
+    Главный класс парсера для модуля CompatibilityAssistant.
+    
+    Отвечает за:
+    1. Определение версии Windows
+    2. Выбор правильного парсера (V1 для Win7, V2 для Win8+)
+    3. Создание таблиц БД
+    4. Запись результатов
+    5. Формирование финального БД с индексами и метаинформацией
+    
+    Таблица хранит 7 основных полей:
+    - UserName: Имя пользователя
+    - FullPath: Полный путь к приложению
+    - DateTime_UTC: Дата/время в UTC (строка)
+    - Timestamp_UTC: Дата/время в UTC (FILETIME)
+    - DateTime_Local: Дата/время в локальном времени
+    - DataSource: Источник данных (путь к ntuser.dat)
+    - TimeZoneOffset: Смещение часового пояса в минутах (только Store)
+    """
+    def __init__(self, parameters: dict):
+        """
+        Инициализирует главный парсер CompatibilityAssistant.
+        
+        Args:
+            parameters (dict): Параметры от Solver (STORAGE, OUTPUTWRITER, DBCONNECTION, MODULENAME, CASENAME)
+        """  
+        self.__parameters: dict = parameters 
+        # Определение структуры таблицы БД
+        self.__recordFields: dict = {
+            'UserName': 'TEXT',
+            'FullPath': 'TEXT',
+            'DateTime_UTC': 'TEXT',
+            'Timestamp_UTC': 'INTEGER',
+            'DateTime_Local': 'TEXT',
+            'DataSource': 'TEXT',
+            'TimeZoneOffset': 'INTEGER'
             }
              
-        osVersion:str = '10'
+        osVersion: str = '10'
+        # Парсинг версии ОС (формат: "7__1" для Windows 7 SP1)
         if osVersion.find('__') != -1:
-            self.__osVersion,self.__osRelease = osVersion.split('__')
+            self.__osVersion, self.__osRelease = osVersion.split('__')
         else:
             self.__osVersion = osVersion
         
+        # Выбор парсера в зависимости от версии ОС
         if self.__osVersion in ['7', 'Server2008R2']:
-            self.__compatibilityAssistantParser = _CompatibilityAssistantParser_V1(parameters,self.__recordFields)
-
+            self.__compatibilityAssistantParser = _CompatibilityAssistantParser_V1(parameters, self.__recordFields)
         else:
-            self.__compatibilityAssistantParser = _CompatibilityAssistantParser_V2(parameters,self.__recordFields)
+            self.__compatibilityAssistantParser = _CompatibilityAssistantParser_V2(parameters, self.__recordFields)
     
             
     async def Start(self) -> Dict:
-        storage:str = self.__parameters.get('STORAGE')
-        outputWriter:Any = self.__parameters.get('OUTPUTWRITER')
+        """
+        Главный асинхронный метод для запуска модуля.
         
+        Процесс выполнения:
+        1. Получает параметры (STORAGE, OUTPUTWRITER, DBCONNECTION, MODULENAME)
+        2. Проверяет соединение с БД
+        3. Определяет структуру таблицы (поля и типы)
+        4. Создает таблицы в БД
+        5. Запускает парсер для извлечения данных
+        6. Записывает все записи в таблицу
+        7. Удаляет временные таблицы
+        8. Создает индексы для быстрого поиска
+        9. Записывает метаинформацию
+        10. Закрывает вывод
+        
+        Создаваемые таблицы в БД:
+        - Data: Основная таблица с 7 полями для хранения записей о совместимости
+        - Info: Метаинформация о датасете (название, версия, timestamp)
+        - Headers: Описание колонок (название, ярлык, ширина)
+        
+        Индексы:
+        - По каждому полю для оптимизации поиска
+        
+        Returns:
+            Dict: {moduleName: outputFileName} - путь к созданному файлу БД
+        """
+        storage: str = self.__parameters.get('STORAGE')
+        outputWriter: Any = self.__parameters.get('OUTPUTWRITER')
+        
+        # Проверка соединения с БД перед началом работы
         if not self.__parameters.get('DBCONNECTION').IsConnected():
-            return # Модуль не может обрабатывать информацию - нет соединения с БД вывода
+            return  # Модуль не может обрабатывать информацию - нет соединения с БД вывода
         
-        fields:Any = {'UserName':('Имя пользователя',140,'string','Имя пользователя'),
-                       'FullPath':('Полный путь / Название',650,'string','Полный путь / Название'),
-                       'DateTime_UTC':('Дата и время создания записи (UTC)', 230,'string', 'Дата и время создания записи (UTC)'),
-                       'Timestamp_UTC':('Врем. метка создания записи (UTC)',-1,'integer', 'Врем. метка создания записи (UTC)'),
-                       'DateTime_Local':('Дата и время создания записи',-1,'string', 'Дата и время создания записи'),
-                       'DataSource':('Источник данных',230,'string','Источник данных')
-                       }
+        # Определение структуры таблицы: (Имя колонки: (Label, Width, Type, Help))
+        fields: Any = {
+            'UserName': ('Имя пользователя', 140, 'string', 'Имя пользователя'),
+            'FullPath': ('Полный путь / Название', 650, 'string', 'Полный путь / Название'),
+            'DateTime_UTC': ('Дата и время создания записи (UTC)', 230, 'string', 'Дата и время создания записи (UTC)'),
+            'Timestamp_UTC': ('Врем. метка создания записи (UTC)', -1, 'integer', 'Врем. метка создания записи (UTC)'),
+            'DateTime_Local': ('Дата и время создания записи', -1, 'string', 'Дата и время создания записи'),
+            'DataSource': ('Источник данных', 230, 'string', 'Источник данных')
+        }
         
-        HELP_TEXT:str = self.__parameters.get('MODULENAME') + """: 
+        # Справочный текст о модуле (выводится в UI)
+        HELP_TEXT: str = self.__parameters.get('MODULENAME') + """: 
         Список совместимости приложений с операционной системой 
 
                             
@@ -291,20 +500,22 @@ class Parser():
 
 
         """
-        # Таблица Info
-        infoTableData:dict = {'Name':self.__parameters.get('MODULENAME'),
-                        'Help':HELP_TEXT,
-                        'Timestamp':self.__parameters.get('CASENAME'), # Время начала обработки массива - имя case
-                        'Vendor':'LabFramework'
-                        }
+        
+        # Метаинформация о датасете
+        infoTableData: dict = {
+            'Name': self.__parameters.get('MODULENAME'),
+            'Help': HELP_TEXT,
+            'Timestamp': self.__parameters.get('CASENAME'),  # Время начала обработки - имя case
+            'Vendor': 'LabFramework'
+        }
         
         # Задать параметры вывода и создать таблицы
-        outputWriter.SetFields(fields,self.__recordFields)
+        outputWriter.SetFields(fields, self.__recordFields)
         outputWriter.CreateDatabaseTables()
 
-        # Обработать профили
+        # Обработать профили и записать данные
         if self.__compatibilityAssistantParser is not None:
-            self.__compatibilityAssistantParser.SetUserProfilesList(self.__parameters.get('USERPROFILES',{}))
+            self.__compatibilityAssistantParser.SetUserProfilesList(self.__parameters.get('USERPROFILES', {}))
             async for userRecords in self.__compatibilityAssistantParser.Start():
                 # Записать данные в БД
                 for record in userRecords:
@@ -313,16 +524,16 @@ class Parser():
             # Удалить временные таблицы
             outputWriter.RemoveTempTables()
             
-            # Создать индексы
+            # Создать индексы для быстрого поиска
             await outputWriter.CreateDatabaseIndexes(self.__parameters.get('MODULENAME'))
         
-            # Завершить формирование БД
+            # Завершить формирование БД (записать метаинформацию)
             outputWriter.SetInfo(infoTableData)
             outputWriter.WriteMeta()
             
             # Закрыть соединение БД
             await outputWriter.CloseOutput()
             
-        return {self.__parameters.get('MODULENAME'):outputWriter.GetDBName()}
+        return {self.__parameters.get('MODULENAME'): outputWriter.GetDBName()}
        
 
