@@ -1,13 +1,3 @@
-"""
-Модуль стратегии извлечения расширений Firefox
-
-Этот модуль реализует стратегию для чтения установленных расширений (аддонов)
-из файла extensions.json каждого профиля Firefox.
-
-Файл: %профиль%/extensions.json
-Содержит JSON с информацией о всех установленных дополнениях браузера.
-"""
-
 import asyncio
 import json
 import os
@@ -17,35 +7,14 @@ from typing import Iterable, Generator
 
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
 
-# Именованный кортеж для маппинга полей расширений
 Extension = namedtuple(
     'Extension',
     'id name version description type active user_disabled install_date update_date path source_url permissions location profile_id'
 )
 
 class ExtensionsStrategy(StrategyABC):
-    """
-    Стратегия для извлечения расширений из Firefox.
-    
-    Читает файл extensions.json профиля и извлекает информацию об
-    установленных расширениях, включая:
-    - ID расширения
-    - Имя и описание
-    - Версию
-    - Статус активности
-    - Дату установки
-    - Разрешения (permissions)
-    
-    Извлекаются только расширения (type == 'extension'), не другие типы аддонов.
-    """
 
     def __init__(self, metadata: Metadata) -> None:
-        """
-        Инициализирует стратегию расширений.
-        
-        Args:
-            metadata: Именованный кортеж с метаинформацией профиля
-        """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
         self._dbWriteInterface = metadata.dbWriteInterface
@@ -53,19 +22,7 @@ class ExtensionsStrategy(StrategyABC):
         self._profile_path = metadata.profilePath
 
     def read(self) -> Generator[list[Extension], None, None]:
-        """
-        Читает расширения из файла extensions.json профиля.
-        
-        Парсит JSON и извлекает информацию о каждом расширении.
-        Фильтрует по type == 'extension' (только расширения, не темы и т.д.).
-        
-        Yields:
-            Батч со всеми найденными расширениями (не поддерживается батчинг)
-        
-        Warns:
-            Если файл extensions.json не найден или при ошибке парсинга JSON
-        """
-        # Чтение расширений из файла extensions.json профиля
+        #Чтение расширений из файла extensions.json профиля
         extensions_file = os.path.join(self._profile_path, 'extensions.json')
         if not os.path.exists(extensions_file):
             self._logInterface.Warn(type(self), f'Файл расширений не найден: {extensions_file}')
@@ -110,14 +67,7 @@ class ExtensionsStrategy(StrategyABC):
             self._logInterface.Error(type(self), f'Ошибка чтения расширений: {str(e)}')
 
     async def write(self, batch: Iterable[Extension]) -> None:
-        """
-        Записывает расширения в таблицу extensions.
-        
-        Использует INSERT OR IGNORE для пропуска дубликатов.
-        
-        Args:
-            batch: Итерируемая коллекция расширений для записи
-        """
+        #Запись расширений в базу данных
         try:
             self._dbWriteInterface._cursor.executemany(
                 '''INSERT OR IGNORE INTO extensions 
@@ -132,14 +82,6 @@ class ExtensionsStrategy(StrategyABC):
             self._logInterface.Error(type(self), f'Ошибка записи расширений: {str(e)}')
 
     async def execute(self, tasks: list[Task]) -> None:
-        """
-        Главный метод выполнения стратегии.
-        
-        Читает все расширения и запускает асинхронную запись.
-        
-        Args:
-            tasks: Список асинхронных задач для добавления новых задач
-        """
         for batch in self.read():
             if batch:  # Проверяем, что батч не пустой
                 task = asyncio.create_task(self.write(batch))
