@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Модуль основного интерфейса
+Модуль главного интерфейса приложения
 
+Этот модуль является центральным компонентом приложения. Класс Interface
+управляет инициализацией всех основных компонентов, обработкой параметров
+командной строки и запуском основного цикла обработки данных.
 """
-import os,shutil
-from typing import Any,AnyStr,Dict,NoReturn
+
+import os, shutil
+from typing import Any, AnyStr, Dict, NoReturn
 from datetime import datetime
 import re
 from abc import ABCMeta, abstractmethod
@@ -17,35 +21,55 @@ from Interfaces.LogInterface import LogInterface
 from Interfaces.SettingsInterface import SettingsInterface
 from Interfaces.Solver import Solver
 
-#----------------------------------------------------------------
+# ################################################################
+# Главный интерфейс приложения
+# ################################################################
 class Interface():
+    """
+    Главный интерфейс приложения.
+    
+    Этот класс координирует всю работу приложения:
+    - Инициализирует логирование и настройки
+    - Обрабатывает аргументы командной строки
+    - Управляет папками для временных файлов и результатов
+    - Запускает основную бизнес-логику через Solver
+    """
+    
     def __init__(self):
+        """
+        Инициализирует главный интерфейс приложения.
+        
+        Процесс:
+        1. Записывает время старта для логов и структуры кейсов
+        2. Инициализирует логирование
+        3. Загружает настройки из Settings.json
+        4. Подготавливает временную папку
+        5. Проверяет/создаёт папку с кейсами
+        """
         # Время старта ПО для лога и создания каталога хранения результатов
-        self.__appStartDateTime:str = str(datetime.now()).split('.')[0].replace(':','_')
+        self.__appStartDateTime: str = str(datetime.now()).split('.')[0].replace(':', '_')
         
         # Интерфейс журналирования сообщений ПО
-        self.__log:LogInterface = LogInterface(self.__appStartDateTime)
+        self.__log: LogInterface = LogInterface(self.__appStartDateTime)
         
         # Интерфейс инициализации настроек
-        self.__settingsInterface:SettingsInterface = SettingsInterface(self.__log)
+        self.__settingsInterface: SettingsInterface = SettingsInterface(self.__log)
         
         # Интерфейс работы с файлами
-        self.__fileContentReader:FileContentReader = FileContentReader()
-        
+        self.__fileContentReader: FileContentReader = FileContentReader()
         
         # Параметры из настроек
-        self.__caseFolder:str = self.__settingsInterface.GetSettingValueByName('CaseFolder')
-        self.__tempFolder:str = self.__settingsInterface.GetSettingValueByName('TemporaryFilesFolder')
+        self.__caseFolder: str = self.__settingsInterface.GetSettingValueByName('CaseFolder')
+        self.__tempFolder: str = self.__settingsInterface.GetSettingValueByName('TemporaryFilesFolder')
         
         # Параметры запуска
-        self.__dataSourceFullPath:str = None
-        self.__outputFileName:str = None
-        
+        self.__dataSourceFullPath: str = None
+        self.__outputFileName: str = None
         
         # Сформировать словарь интерфейсов приложения        
-        self.interfaces:dict = {'LOGGER':self.__log}
+        self.interfaces: dict = {'LOGGER': self.__log}
         
-        self._solver:Solver = None
+        self._solver: Solver = None
         
         # Предварительная подготовка к запуску
         self.__ClearTempFolder()
