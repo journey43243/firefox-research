@@ -1,3 +1,10 @@
+"""Модуль стратегии чтения и записи расширений Firefox.
+
+Содержит реализацию `ExtensionsStrategy`, предназначенную для
+извлечения данных о расширениях браузера Firefox из файла
+`extensions.json` профиля и записи их в выходную базу данных.
+"""
+
 import asyncio
 import json
 import os
@@ -7,14 +14,36 @@ from typing import Iterable, Generator
 
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
 
+# Именованный кортеж, описывающий структуру расширения Firefox
 Extension = namedtuple(
     'Extension',
-    'id name version description type active user_disabled install_date update_date path source_url permissions location profile_id'
+    'id name version description type active user_disabled install_date '
+    'update_date path source_url permissions location profile_id'
 )
 
+
 class ExtensionsStrategy(StrategyABC):
+    """Стратегия обработки данных о расширениях Firefox.
+
+    Стратегия читает список расширений из файла `extensions.json`
+    внутри профиля Firefox, фильтрует только объекты типа "extension",
+    преобразует их в структуру `Extension` и передает в модуль записи.
+
+    Атрибуты:
+        _logInterface: Интерфейс логирования.
+        _dbReadInterface: Интерфейс чтения данных (не используется в этой стратегии).
+        _dbWriteInterface: Интерфейс записи данных в конечную БД.
+        _profile_id (int): Идентификатор профиля Firefox.
+        _profile_path (str): Путь к директории профиля Firefox.
+    """
 
     def __init__(self, metadata: Metadata) -> None:
+        """Инициализирует стратегию данными из контейнера Metadata.
+
+        Args:
+            metadata (Metadata): Метаданные, включающие интерфейсы БД,
+                параметры профиля и интерфейс логирования.
+        """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
         self._dbWriteInterface = metadata.dbWriteInterface
@@ -22,10 +51,29 @@ class ExtensionsStrategy(StrategyABC):
         self._profile_path = metadata.profilePath
 
     def read(self) -> Generator[list[Extension], None, None]:
-        #Чтение расширений из файла extensions.json профиля
+        """Считывает расширения Firefox из файла extensions.json.
+
+        Возвращает данные одним батчем (списком структур Extension),
+        или завершает работу без возврата, если файл отсутствует.
+
+        Returns:
+            Generator[list[Extension], None, None]: Генератор, выдающий
+                список найденных расширений ровно один раз.
+
+        Notes:
+            В случае отсутствия файла создается предупреждение в логах.
+            Ошибки чтения JSON или структуры данных логируются.
+
+        Raises:
+            Exception: Любая ошибка чтения файла или парсинга JSON
+                логируется, но не пробрасывается.
+        """
         extensions_file = os.path.join(self._profile_path, 'extensions.json')
         if not os.path.exists(extensions_file):
-            self._logInterface.Warn(type(self), f'Файл расширений не найден: {extensions_file}')
+            self._logInterface.Warn(
+                type(self),
+                f'Файл расширений не найден: {extensions_file}'
+            )
             return
 
         try:
@@ -34,13 +82,12 @@ class ExtensionsStrategy(StrategyABC):
 
             extensions = []
             for addon in data.get('addons', []):
-                # Берем только расширения (type == 'extension')
                 if addon.get('type') != 'extension':
                     continue
 
                 default_locale = addon.get('defaultLocale', {})
                 permissions = addon.get('userPermissions', {})
-                
+
                 extension = Extension(
                     id=addon.get('id', ''),
                     name=default_locale.get('name', ''),
@@ -59,15 +106,35 @@ class ExtensionsStrategy(StrategyABC):
                 )
                 extensions.append(extension)
 
-            # Возвращаем одним батчем
             yield extensions
-            self._logInterface.Info(type(self), f'Найдено {len(extensions)} расширений')
+            self._logInterface.Info(
+                type(self),
+                f'Найдено {len(extensions)} расширений'
+            )
 
         except Exception as e:
-            self._logInterface.Error(type(self), f'Ошибка чтения расширений: {str(e)}')
+            self._logInterface.Error(
+                type(self),
+                f'Ошибка чтения расширений: {str(e)}'
+            )
 
     async def write(self, batch: Iterable[Extension]) -> None:
-        #Запись расширений в базу данных
+        """Записывает список расширений в выходную базу данных.
+
+        Args:
+            batch (Iterable[Extension]): Список объектов расширений,
+                подготовленных к записи.
+
+        Returns:
+            None
+
+        Notes:
+            Все записи добавляются через `INSERT OR IGNORE`, что
+            исключает дублирование строк.
+
+        Raises:
+            Exception: Любая ошибка записи логируется.
+        """
         try:
             self._dbWriteInterface._cursor.executemany(
                 '''INSERT OR IGNORE INTO extensions 
@@ -79,10 +146,26 @@ class ExtensionsStrategy(StrategyABC):
             self._dbWriteInterface.Commit()
             self._logInterface.Info(type(self), 'Расширения записаны в БД')
         except Exception as e:
-            self._logInterface.Error(type(self), f'Ошибка записи расширений: {str(e)}')
+            self._logInterface.Error(
+                type(self),
+                f'Ошибка записи расширений: {str(e)}'
+            )
 
     async def execute(self, tasks: list[Task]) -> None:
+        """Создаёт асинхронную задачу записи данных о расширениях.
+
+        Читает расширения из профиля (read) и, если батч не пуст,
+        создаёт асинхронную задачу записи в БД, добавляя её в список
+        задач для последующего исполнения.
+
+        Args:
+            tasks (list[Task]): Список задач, в который добавляется
+                созданная задача записи.
+
+        Returns:
+            None
+        """
         for batch in self.read():
-            if batch:  # Проверяем, что батч не пустой
+            if batch:
                 task = asyncio.create_task(self.write(batch))
                 tasks.append(task)

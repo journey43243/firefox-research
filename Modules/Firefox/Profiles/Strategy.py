@@ -1,3 +1,11 @@
+"""
+Модуль для извлечения путей профилей Firefox.
+
+Реализует стратегию чтения файла profiles.ini, расположенного в каталоге Firefox,
+и выгружает пути профилей в базу данных. Используется в составе системы
+извлечения данных браузера.
+"""
+
 import asyncio
 from asyncio import Task
 from typing import Generator
@@ -7,18 +15,49 @@ from Modules.Firefox.interfaces.Strategy import StrategyABC
 
 import os
 
+
 class PathMixin:
-    __folderPath = f'{os.getenv('APPDATA')}\\Mozilla\\Firefox'
+    """
+    Миксин, предоставляющий путь к каталогу Firefox внутри APPDATA.
+
+    Атрибуты:
+        folderPath (str): Абсолютный путь к каталогу Firefox, формируемый
+        на основе переменной окружения APPDATA.
+    """
+
+    __folderPath = f"{os.getenv('APPDATA')}\\Mozilla\\Firefox"
 
     @property
     def folderPath(self):
+        """Возвращает путь к каталогу Firefox."""
         return self.__folderPath
 
+
 class ProfilesStrategy(StrategyABC, PathMixin):
+    """
+    Стратегия чтения списка профилей Firefox из файла profiles.ini.
+
+    Класс реализует интерфейс StrategyABC и использует файл profiles.ini
+    для извлечения путей профилей Firefox, после чего записывает их
+    в базу данных.
+
+    Атрибуты:
+        _fileReader (FileContentReader): Интерфейс чтения текстовых файлов.
+        _logInterface: Интерфейс логирования.
+        _dbWriteInterface: Интерфейс записи в базу данных.
+        __fileName (str): Имя файла, из которого извлекаются профили.
+    """
 
     __fileName = 'profiles.ini'
 
     def __init__(self, logInterface, dbWriteInterface) -> None:
+        """
+        Инициализирует стратегию профилей.
+
+        Args:
+            logInterface: Объект логирования.
+            dbWriteInterface: Интерфейс записи в базу данных.
+        """
         self._fileReader = FileContentReader()
         self._logInterface = logInterface
         self._dbWriteInterface = dbWriteInterface
@@ -26,10 +65,25 @@ class ProfilesStrategy(StrategyABC, PathMixin):
 
     @property
     def fileName(self):
+        """Возвращает имя файла с профилями Firefox."""
         return self.__fileName
 
     def read(self) -> Generator[str, None, None]:
-        _, _, content = self._fileReader.GetTextFileContent(self.folderPath, self.fileName,includeTimestamps=False)
+        """
+        Читает файл profiles.ini и генерирует пути к профилям Firefox.
+
+        Returns:
+            Generator[str, None, None]: Генератор путей к профилям.
+
+        Поведение:
+            — Извлекает содержимое файла profiles.ini.
+            — Находит строки, содержащие ключ 'Path'.
+            — Формирует абсолютные пути профилей.
+            — Генерирует один путь за раз.
+        """
+        _, _, content = self._fileReader.GetTextFileContent(
+            self.folderPath, self.fileName, includeTimestamps=False
+        )
         profilesCnt = 0
         for _, row in content.items():
             if 'Path' in row:
@@ -39,13 +93,30 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         self._logInterface.Info(type(self), f"Считано {profilesCnt} профилей")
 
     async def write(self, butch: list[str]) -> None:
+        """
+        Записывает полученные пути профилей в таблицу базы данных.
+
+        Args:
+            butch (list[str]): Список путей профилей, считанных ранее.
+        """
         for record in butch:
             self._dbWriteInterface.ExecCommit(
-                '''INSERT INTO profiles (path) VALUES (?)''', (record, )
+                '''INSERT INTO profiles (path) VALUES (?)''', (record,)
             )
-        self._logInterface.Info(type(self),'Все профили загружены в таблицу')
+        self._logInterface.Info(type(self), 'Все профили загружены в таблицу')
 
     async def execute(self, tasks: list[Task]) -> None:
+        """
+        Планирует задачу записи профилей в базу данных.
+
+        Args:
+            tasks (list[Task]): Список задач asyncio, в который добавляется новая задача.
+
+        Поведение:
+            — Запускает чтение всех профилей.
+            — Создаёт задачу асинхронной записи.
+            — Добавляет задачу в предоставленный список.
+        """
         profiles = [profile for profile in self.read()]
         task = asyncio.create_task(self.write(profiles))
         tasks.append(task)

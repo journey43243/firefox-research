@@ -1,3 +1,15 @@
+"""
+Модуль для извлечения и загрузки закладок Firefox.
+
+Данный модуль реализует стратегию BookmarksStrategy, которая отвечает
+за чтение записей из таблицы `moz_bookmarks` исходного профиля Firefox
+и последующую пакетную запись преобразованных данных в результирующую БД.
+Стратегия работает с закладками типа 1 (обычные записи) и преобразует
+временные метки Firefox в формат datetime.
+
+Модуль используется в составе системы переноса данных профиля Firefox.
+"""
+
 import asyncio
 import sqlite3
 from asyncio import Task
@@ -13,14 +25,53 @@ Bookmark = namedtuple(
 
 
 class BookmarksStrategy(StrategyABC):
+    """
+    Strategy-класс для чтения и записи данных о закладках Firefox.
+
+    Данная стратегия реализует выгрузку закладок из исходной базы Firefox
+    и их последующую загрузку в результирующую базу в пакетном режиме.
+
+    Атрибуты
+    --------
+    _logInterface : Any
+        Интерфейс логирования, используемый для вывода диагностических сообщений.
+    _dbReadInterface : Any
+        Интерфейс чтения данных из исходной базы Firefox.
+    _dbWriteInterface : Any
+        Интерфейс записи данных в результирующую базу.
+    _profile_id : int | str
+        Идентификатор профиля Firefox, которому принадлежат извлекаемые записи.
+    """
 
     def __init__(self, metadata: Metadata) -> None:
+        """
+        Инициализирует стратегию закладок, подключая необходимые интерфейсы.
+
+        Parameters
+        ----------
+        metadata : Metadata
+            Контейнер с зависимостями: интерфейсы логирования, чтения,
+            записи, а также идентификатор профиля.
+        """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
         self._dbWriteInterface = metadata.dbWriteInterface
         self._profile_id = metadata.profileId
 
-    def read(self) -> Generator[list[Bookmark], None, None]:
+    def read(self) -> Generator[list['Bookmark'], None, None]:
+        """
+        Читает закладки из исходной базы Firefox пакетами по 500 строк.
+
+        Returns
+        -------
+        Generator[list[Bookmark], None, None]
+            Генератор, возвращающий списки объектов Bookmark.
+
+        Notes
+        -----
+        При возникновении ошибки чтения (например, блокировки SQLite)
+        выводится предупреждение и чтение прекращается.
+        """
         try:
             cursor = self._dbReadInterface._cursor.execute(
                 '''SELECT id, type, fk, parent, position, title, 
@@ -35,10 +86,24 @@ class BookmarksStrategy(StrategyABC):
                     break
                 yield [Bookmark(*row, profile_id=self._profile_id) for row in batch]
         except sqlite3.OperationalError as e:
-            self._logInterface.Warn(type(self),
-                                    f'Закладки для профиля {self._profile_id} не могут быть считаны: {e}')
+            self._logInterface.Warn(
+                type(self),
+                f'Закладки для профиля {self._profile_id} не могут быть считаны: {e}'
+            )
 
     async def write(self, butch: Iterable[tuple]) -> None:
+        """
+        Записывает пакет закладок в результирующую базу.
+
+        Parameters
+        ----------
+        butch : Iterable[tuple]
+            Пакет данных закладок в виде кортежей для операции INSERT OR REPLACE.
+
+        Notes
+        -----
+        После записи вызывается Commit(), а также выводится информационное сообщение.
+        """
         self._dbWriteInterface._cursor.executemany(
             '''INSERT OR REPLACE INTO bookmarks 
                (id, type, place, parent, position, title, date_added, last_modified, profile_id)
@@ -49,8 +114,23 @@ class BookmarksStrategy(StrategyABC):
         self._logInterface.Info(type(self), f'Группа из {len(butch)} закладок успешно загружена')
 
     async def execute(self, tasks: list[Task]) -> None:
+        """
+        Последовательно выполняет загрузку всех пакетов закладок.
+
+        Чтение происходит в синхронном режиме через генератор read().
+        Для каждого пакета создаётся асинхронная задача записи и дожидаются
+        её завершения перед переходом к следующему.
+
+        Parameters
+        ----------
+        tasks : list[Task]
+            Список, в который добавляются созданные задачи записи.
+
+        Notes
+        -----
+        Выполнение последовательное, а не конкурентное — для контроля порядка записи.
+        """
         for batch in self.read():
             task = asyncio.create_task(self.write(batch))
             tasks.append(task)
             await task
-
