@@ -150,3 +150,49 @@ class SQLiteStarter:
         self.dbInterface.ExecCommit('''CREATE INDEX IF NOT EXISTS idx_extensions_id ON extensions (id)''')
         self.dbInterface.ExecCommit('''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON extensions (profile_id)''')
         self.logInterface.Info(type(self), 'Таблица с расширениями создана')
+        
+    def createFaviconsTables(self) -> None:
+        """
+        Создаёт таблицы для хранения кэшированных иконок Firefox.
+        """
+        self.dbInterface.ExecCommit(
+            '''CREATE TABLE favicons (
+                id INTEGER PRIMARY KEY,
+                icon_url TEXT,
+                width INTEGER,
+                height INTEGER,
+                root INTEGER,
+                color INTEGER,
+                data BLOB,
+                profile_id INTEGER,
+                FOREIGN KEY(profile_id) REFERENCES profiles(id)
+            )'''
+        )
+        
+        self.dbInterface.ExecCommit(
+            '''CREATE TABLE favicon_pages (
+                id INTEGER PRIMARY KEY,
+                page_url TEXT,
+                page_url_hash INTEGER,
+                profile_id INTEGER,
+                FOREIGN KEY(profile_id) REFERENCES profiles(id)
+            )'''
+        )
+        
+        self.dbInterface.ExecCommit(
+            '''CREATE TABLE favicons_to_pages (
+                id INTEGER PRIMARY KEY,
+                page_id INTEGER,
+                icon_id INTEGER,
+                profile_id INTEGER,
+                FOREIGN KEY(page_id) REFERENCES favicon_pages(id),
+                FOREIGN KEY(icon_id) REFERENCES favicons(id),
+                FOREIGN KEY(profile_id) REFERENCES profiles(id)
+            )'''
+        )
+        
+        self.dbInterface.ExecCommit('''CREATE INDEX idx_favicons_icon_url ON favicons (icon_url)''')
+        self.dbInterface.ExecCommit('''CREATE INDEX idx_favicon_pages_url ON favicon_pages (page_url)''')
+        self.dbInterface.ExecCommit('''CREATE INDEX idx_favicons_to_pages_ids ON favicons_to_pages (page_id, icon_id)''')
+        
+        self.logInterface.Info(type(self), 'Таблицы с кэшем иконок созданы')
