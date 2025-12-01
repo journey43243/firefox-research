@@ -17,7 +17,7 @@ from Modules.Firefox.Passwords.Strategy import PasswordStrategy
 from Modules.Firefox.Bookmarks.Strategy import BookmarksStrategy
 from Modules.Firefox.Downloads.Strategy import DownloadsStrategy
 from Modules.Firefox.Extensions.Strategy import ExtensionsStrategy
-
+from Modules.Firefox.Favicons.Strategy import FaviconsStrategy
 
 class Parser:
     """
@@ -87,7 +87,7 @@ class Parser:
         HELP_TEXT = self.moduleName + ' Firefox Researching'
         sqlCreator = SQLiteStarter(self.logInterface, self.dbInterface)
         sqlCreator.createAllTables()
-
+    
         profilesStrategy = ProfilesStrategy(self.logInterface, self.dbInterface)
         profiles = [profile for profile in profilesStrategy.read()]
         tasks = []
@@ -99,6 +99,15 @@ class Parser:
             dbReadIntreface = SQLiteDatabaseInterface(
                 profilePath + r'\places.sqlite', self.logInterface, 'Firefox', False
             )
+            
+            dbFaviconsReadInterface = SQLiteDatabaseInterface(
+                profilePath + r'\favicons.sqlite', self.logInterface, 'Firefox', False
+            )
+
+            favicons_metadata = Metadata(
+                self.logInterface, dbFaviconsReadInterface, self.dbInterface, id + 1, profilePath
+            )
+            
             metadata = Metadata(
                 self.logInterface, dbReadIntreface, self.dbInterface, id + 1, profilePath
             )
@@ -108,6 +117,8 @@ class Parser:
             for strategy in StrategyABC.__subclasses__():
                 if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
                     continue
+                elif strategy.__name__ == 'FaviconsStrategy':
+                    await strategy(favicons_metadata).execute(tasks)
                 else:
                     await strategy(metadata).execute(tasks)
                     self.logInterface.Info(type(strategy), 'отработала успешно')
