@@ -5,10 +5,33 @@
 В таблицу Data пишет количество записей в каждой таблице.
 В таблицу Info краткую сводку о назначении БД.
 В таблицу Headers заголовки.
+
+Пример запуска:
+    python firefox_module.py --profiles 20 --history 50000 --downloads 10000
 """
 
 from typing import Dict
 import random
+import argparse
+
+def parse_mock_counts():
+    parser = argparse.ArgumentParser(description="Set mock counts for Firefox test module")
+    parser.add_argument("--profiles", type=int, default=10, help="Number of profiles")
+    parser.add_argument("--history", type=int, default=100000, help="Number of history entries")
+    parser.add_argument("--downloads", type=int, default=5000, help="Number of downloads")
+    parser.add_argument("--bookmarks", type=int, default=3000, help="Number of bookmarks")
+    parser.add_argument("--passwords", type=int, default=1000, help="Number of passwords")
+    parser.add_argument("--extensions", type=int, default=150, help="Number of extensions")
+
+    args = parser.parse_args()
+    return {
+        "profiles": args.profiles,
+        "history": args.history,
+        "downloads": args.downloads,
+        "bookmarks": args.bookmarks,
+        "passwords": args.passwords,
+        "extensions": args.extensions
+    }
 
 class Parser:
     def __init__(self, parameters: dict):
@@ -19,18 +42,11 @@ class Parser:
         self.moduleName = parameters["MODULENAME"]
 
         # Сколько записей создавать для каждой таблицы
-        self.mock_counts = parameters.get("MOCK_COUNTS", {
-            "profiles": 10,
-            "history": 100000,
-            "downloads": 5000,
-            "bookmarks": 3000,
-            "passwords": 1000,
-            "extensions": 150
-        })
+        self.mock_counts = parameters.get("MOCK_COUNTS") or parse_mock_counts()
 
     async def Start(self) -> Dict:
         if not self.db.IsConnected():
-            return
+            raise SystemExit("Ошибка: база данных не подключена!")
 
         # ---------------------------------------------------------------
         # 1. Создаём Firefox таблицы через sqliteStarter модуля FireFox
