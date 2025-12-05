@@ -37,16 +37,16 @@ class PasswordStrategy(StrategyABC):
 
     def write(self, batch: Iterable[tuple]) -> None:
         cursor = self._dbWriteInterface._cursor
-        conn = self._dbWriteInterface._connection
+        #conn = self._dbWriteInterface._connection
         try:
-            conn.execute("BEGIN")
+            cursor.execute("BEGIN")
             cursor.executemany(
                 '''INSERT OR IGNORE INTO passwords (url, user, password, profile_id) VALUES (?, ?, ?, ?)''',
                 batch
             )
-            conn.commit()
+            cursor.commit()
         except Exception as e:
-            conn.rollback()
+            cursor.rollback()
             self._logInterface.Error(type(self), f"Ошибка записи батча: {e}")
         else:
             self._logInterface.Info(type(self), f'Группа записей успешно загружена')
