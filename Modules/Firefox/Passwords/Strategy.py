@@ -1,4 +1,3 @@
-import asyncio
 from asyncio import Task
 from collections import namedtuple
 from typing import Iterable
@@ -36,7 +35,7 @@ class PasswordStrategy(StrategyABC):
         except Exception as e:
             self._logInterface.Warn(type(self), f'Ошибка при чтении паролей: {e}')
 
-    async def write(self, batch: Iterable[tuple]) -> None:
+    def write(self, batch: Iterable[tuple]) -> None:
         cursor = self._dbWriteInterface._cursor
         conn = self._dbWriteInterface._connection
         try:
@@ -52,7 +51,7 @@ class PasswordStrategy(StrategyABC):
         else:
             self._logInterface.Info(type(self), f'Группа записей успешно загружена')
 
-    async def execute(self, tasks: list[Task]) -> None:
+    def execute(self, tasks: list[Task] = None) -> None:
         for batch in self.read():
-            task = asyncio.create_task(self.write(batch))
-            tasks.append(task)
+            if batch:
+                self.write(batch)

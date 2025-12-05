@@ -84,5 +84,5 @@ class ExtensionsStrategy(StrategyABC):
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
         for batch in self.read():
-            if batch:  # Проверяем, что батч не пустой
-                executor.submit(self.write,batch)
+            if batch:
+                self.write(batch)
