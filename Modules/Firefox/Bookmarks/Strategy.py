@@ -14,6 +14,7 @@ import asyncio
 import sqlite3
 from asyncio import Task
 from collections import namedtuple
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable
 
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator, Metadata
@@ -113,24 +114,6 @@ class BookmarksStrategy(StrategyABC):
         self._dbWriteInterface.Commit()
         self._logInterface.Info(type(self), f'Группа из {len(butch)} закладок успешно загружена')
 
-    async def execute(self, tasks: list[Task]) -> None:
-        """
-        Последовательно выполняет загрузку всех пакетов закладок.
-
-        Чтение происходит в синхронном режиме через генератор read().
-        Для каждого пакета создаётся асинхронная задача записи и дожидаются
-        её завершения перед переходом к следующему.
-
-        Parameters
-        ----------
-        tasks : list[Task]
-            Список, в который добавляются созданные задачи записи.
-
-        Notes
-        -----
-        Выполнение последовательное, а не конкурентное — для контроля порядка записи.
-        """
+    def execute(self, executor: ThreadPoolExecutor) -> None:
         for batch in self.read():
-            task = asyncio.create_task(self.write(batch))
-            tasks.append(task)
-            await task
+            executor.submit(self.write,batch)

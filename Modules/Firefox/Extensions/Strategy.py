@@ -10,6 +10,7 @@ import json
 import os
 from asyncio import Task
 from collections import namedtuple
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable, Generator
 
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
@@ -151,21 +152,7 @@ class ExtensionsStrategy(StrategyABC):
                 f'Ошибка записи расширений: {str(e)}'
             )
 
-    async def execute(self, tasks: list[Task]) -> None:
-        """Создаёт асинхронную задачу записи данных о расширениях.
-
-        Читает расширения из профиля (read) и, если батч не пуст,
-        создаёт асинхронную задачу записи в БД, добавляя её в список
-        задач для последующего исполнения.
-
-        Args:
-            tasks (list[Task]): Список задач, в который добавляется
-                созданная задача записи.
-
-        Returns:
-            None
-        """
+    def execute(self, executor: ThreadPoolExecutor) -> None:
         for batch in self.read():
-            if batch:
-                task = asyncio.create_task(self.write(batch))
-                tasks.append(task)
+            if batch:  # Проверяем, что батч не пустой
+                executor.submit(self.write,batch)

@@ -5,11 +5,9 @@
 выходную базу данных. Использует инфраструктуру StrategyABC.
 """
 
-import asyncio
 import sqlite3
-from asyncio import Task
 from collections import namedtuple
-from importlib.metadata import metadata
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable, Generator
 
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
@@ -26,7 +24,7 @@ class DownloadsStrategy(StrategyABC):
     и `moz_anno_attributes`, извлекая строки, связанные с загрузками
     (имя атрибута содержит подстроку `"downloads"`). Чтение выполняется
     партиями и предоставляет данные в виде генератора списков.
-    
+
     Атрибуты:
         _logInterface: Интерфейс для записи логов.
         _dbReadInterface: Интерфейс чтения данных из БД Firefox.
@@ -114,20 +112,6 @@ class DownloadsStrategy(StrategyABC):
         except Exception as e:
             self._logInterface.Error(type(self), f'Ошибка при записи загрузок: {e}')
 
-    async def execute(self, tasks: list[Task]) -> None:
-        """Создаёт и регистрирует асинхронные задачи для записи данных.
-
-        Последовательно читает партии данных (`read()`), создаёт
-        асинхронные задачи записи (`write()`) и добавляет их в список
-        задач, который далее будет выполнен планировщиком.
-
-        Args:
-            tasks (list[Task]): Коллекция задач, в которую будут добавлены
-                новые задачи записи.
-
-        Returns:
-            None
-        """
+    def execute(self, executor: ThreadPoolExecutor) -> None:
         for batch in self.read():
-            task = asyncio.create_task(self.write(batch))
-            tasks.append(task)
+            executor.submit(self.write,batch)

@@ -6,8 +6,8 @@
 """
 
 from abc import ABC, abstractmethod
-from asyncio import Task
 from collections import namedtuple
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Generator, Iterable
 
 # Метаданные, передаваемые стратегиям при инициализации
@@ -43,34 +43,9 @@ class StrategyABC(ABC):
         pass
 
     @abstractmethod
-    async def write(self, butch: Iterable) -> None:
-        """Записывает партию данных в выходную систему.
-
-        Args:
-            butch (Iterable): Партия данных, подготовленная к записи.
-
-        Returns:
-            None
-
-        Notes:
-            Реализация должна сама вызывать commit (если требуется),
-            а также логировать ошибки записи.
-        """
+    def write(self, butch: Iterable) -> None:
         pass
 
     @abstractmethod
-    async def execute(self, tasks: list[Task]) -> None:
-        """Создаёт асинхронные задачи для запуска обработки данных.
-
-        Args:
-            tasks (list[Task]): Коллекция задач, в которую добавляются
-                асинхронные операции записи данных.
-
-        Returns:
-            None
-
-        Notes:
-            Метод обычно вызывает read(), формирует батчи, и для каждого
-            создаёт задачу write() через asyncio.create_task().
-        """
+    def execute(self, threadPool: ThreadPoolExecutor) -> None:
         pass
