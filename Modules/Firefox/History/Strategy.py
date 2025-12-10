@@ -79,7 +79,7 @@ class HistoryStrategy(StrategyABC):
                 f'{self._profile_id} не может быть считан (не активен)'
             )
 
-    async def write(self, butch: Iterable[tuple]) -> None:
+    def write(self, butch: Iterable[tuple]) -> None:
         """Записывает партию записей истории в выходную базу данных.
 
         Args:

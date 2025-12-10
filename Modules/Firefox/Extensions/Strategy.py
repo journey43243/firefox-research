@@ -119,7 +119,7 @@ class ExtensionsStrategy(StrategyABC):
                 f'Ошибка чтения расширений: {str(e)}'
             )
 
-    async def write(self, batch: Iterable[Extension]) -> None:
+    def write(self, batch: Iterable[Extension]) -> None:
         """Записывает список расширений в выходную базу данных.
 
         Args:

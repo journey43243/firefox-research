@@ -80,7 +80,7 @@ class DownloadsStrategy(StrategyABC):
                 f'(таблица отсутствует или БД не доступна): {e}'
             )
 
-    async def write(self, batch: Iterable[Download]) -> None:
+    def write(self, batch: Iterable[Download]) -> None:
         """Записывает партию загрузок в выходную базу данных.
 
         Args:

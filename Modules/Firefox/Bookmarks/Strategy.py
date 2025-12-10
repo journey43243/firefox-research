@@ -10,9 +10,7 @@
 Модуль используется в составе системы переноса данных профиля Firefox.
 """
 
-import asyncio
 import sqlite3
-from asyncio import Task
 from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable
@@ -92,7 +90,7 @@ class BookmarksStrategy(StrategyABC):
                 f'Закладки для профиля {self._profile_id} не могут быть считаны: {e}'
             )
 
-    async def write(self, butch: Iterable[tuple]) -> None:
+    def write(self, butch: Iterable[tuple]) -> None:
         """
         Записывает пакет закладок в результирующую базу.
 

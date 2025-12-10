@@ -91,7 +91,7 @@ class ProfilesStrategy(StrategyABC, PathMixin):
                 yield self.folderPath + '\\' + row
         self._logInterface.Info(type(self), f"Считано {profilesCnt} профилей")
 
-    async def write(self, butch: list[str]) -> None:
+    def write(self, butch: list[str]) -> None:
         """
         Записывает полученные пути профилей в таблицу базы данных.
 
