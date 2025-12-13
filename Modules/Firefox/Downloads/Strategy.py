@@ -41,8 +41,22 @@ class DownloadsStrategy(StrategyABC):
         """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = metadata.dbWriteInterface
+        self._dbWriteInterface = self._writeInterface("FirefoxDownloads",metadata.logInterface,metadata.caseFolder)
         self._profile_id = metadata.profileId
+
+    def createDataTable(self):
+        """
+               Создаёт таблицу 'downloads' для хранения загрузок Firefox
+               и индекс по place_id.
+               """
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE downloads (id PRIMARY KEY, place_id INTEGER,
+            anno_attribute_id INTEGER, content TEXT, profile_id INTEGER)'''
+        )
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_downloads_place_id on downloads (place_id)''')
+        self._logInterface.Info(type(self), 'Таблица с загрузками создана')
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+
 
     def read(self) -> Generator[list[Download], None, None]:
         """Читает данные о загрузках из таблиц Firefox партиями.
@@ -113,5 +127,7 @@ class DownloadsStrategy(StrategyABC):
             self._logInterface.Error(type(self), f'Ошибка при записи загрузок: {e}')
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
+        self.createDataTable()
         for batch in self.read():
             executor.submit(self.write,batch)
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

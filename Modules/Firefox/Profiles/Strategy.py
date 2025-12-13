@@ -5,11 +5,11 @@
 и выгружает пути профилей в базу данных. Используется в составе системы
 извлечения данных браузера.
 """
-
+import pathlib
 from concurrent.futures import ThreadPoolExecutor
 from typing import Generator
 
-from Common.Routines import FileContentReader
+from Common.Routines import FileContentReader, SQLiteDatabaseInterface
 from Modules.Firefox.interfaces.Strategy import StrategyABC
 
 import os
@@ -49,7 +49,7 @@ class ProfilesStrategy(StrategyABC, PathMixin):
 
     __fileName = 'profiles.ini'
 
-    def __init__(self, logInterface, dbWriteInterface) -> None:
+    def __init__(self, logInterface, caseFolder) -> None:
         """
         Инициализирует стратегию профилей.
 
@@ -59,8 +59,20 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         """
         self._fileReader = FileContentReader()
         self._logInterface = logInterface
-        self._dbWriteInterface = dbWriteInterface
+        self._dbWriteInterface = self._writeInterface("FirefoxProfiles", logInterface, caseFolder)
         super().__init__()
+        self.createDataTable()
+
+    def createDataTable(self):
+        """
+        Создаёт базу 'profiles' для хранения путей профилей Firefox
+        и индекс для ускоренного поиска по пути.
+        """
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
+        )
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_profiles_path on profiles (path)''')
+        self._logInterface.Info(type(self), 'Таблица с профилями создана.')
 
     @property
     def fileName(self):
@@ -100,10 +112,11 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         """
         for record in butch:
             self._dbWriteInterface.ExecCommit(
-                '''INSERT INTO profiles (path) VALUES (?)''', (record,)
+                '''INSERT INTO profiles (path) VALUES (?)''', (record, )
             )
         self._logInterface.Info(type(self), 'Все профили загружены в таблицу')
 
     def execute(self, threadPool: ThreadPoolExecutor) -> None:
         profiles = [profile for profile in self.read()]
         self.write(profiles)
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

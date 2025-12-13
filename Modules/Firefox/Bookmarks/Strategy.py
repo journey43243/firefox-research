@@ -54,8 +54,20 @@ class BookmarksStrategy(StrategyABC):
         """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = metadata.dbWriteInterface
+        self._dbWriteInterface = self._writeInterface("FirefoxBookmarks",metadata.logInterface,metadata.caseFolder)
         self._profile_id = metadata.profileId
+
+    def createDataTable(self):
+        """
+        Создаёт таблицу 'bookmarks' для хранения закладок Firefox.
+        """
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE bookmarks (id INTEGER, type INTEGER, place INTEGER,
+            parent INTEGER, position INTEGER, title TEXT,
+            date_added text, last_modified text, profile_id INTEGER,
+            PRIMARY KEY (id, profile_id))'''
+        )
+        self._logInterface.Info(type(self), 'Таблица с вкладками создана')
 
     def read(self) -> Generator[list['Bookmark'], None, None]:
         """
@@ -113,5 +125,7 @@ class BookmarksStrategy(StrategyABC):
         self._logInterface.Info(type(self), f'Группа из {len(butch)} закладок успешно загружена')
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
+        self.createDataTable()
         for batch in self.read():
             executor.submit(self.write,batch)
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

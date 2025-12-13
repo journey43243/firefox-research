@@ -5,13 +5,11 @@
 из профилей Firefox (история, пароли, закладки, загрузки, расширения),
 запускает их асинхронно и сохраняет результаты в результирующую базу данных.
 """
-
-import asyncio
+import pathlib
 
 from Common.Routines import SQLiteDatabaseInterface
 from Modules.Firefox.Profiles.Strategy import ProfilesStrategy
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
-from Modules.Firefox.sqliteStarter import SQLiteStarter
 from Modules.Firefox.History.Strategy import HistoryStrategy
 from Modules.Firefox.Passwords.Strategy import PasswordStrategy
 from Modules.Firefox.Bookmarks.Strategy import BookmarksStrategy
@@ -61,8 +59,6 @@ class Parser:
         self.outputFileName = parameters['OUTPUTFILENAME']
         self.outputWriter = parameters['OUTPUTWRITER']
         self.moduleName = parameters['MODULENAME']
-        self.dbWritePath = f'{self.caseFolder}/{self.caseName}/{self.outputFileName}'
-
     async def Start(self):
         """
         Основной метод запуска парсинга Firefox.
@@ -86,10 +82,8 @@ class Parser:
             return
 
         HELP_TEXT = self.moduleName + ' Firefox Researching'
-        sqlCreator = SQLiteStarter(self.logInterface, self.dbInterface)
-        sqlCreator.createAllTables()
 
-        profilesStrategy = ProfilesStrategy(self.logInterface, self.dbInterface)
+        profilesStrategy = ProfilesStrategy(self.logInterface, pathlib.Path(self.caseFolder).joinpath(self.caseName))
         profiles = [profile for profile in profilesStrategy.read()]
 
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -97,7 +91,7 @@ class Parser:
             for id, profilePath in enumerate(profiles):
                 dbReadIntreface = SQLiteDatabaseInterface(profilePath + r'\places.sqlite', self.logInterface,
                                                           'Firefox', False)
-                metadata = Metadata(self.logInterface, dbReadIntreface, self.dbInterface, id + 1, profilePath)
+                metadata = Metadata(self.logInterface, dbReadIntreface, pathlib.Path(self.caseFolder).joinpath(self.caseName), id + 1, profilePath)
                 HistoryStrategy(metadata).execute(executor)
                 for strategy in StrategyABC.__subclasses__():
                     if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
@@ -106,6 +100,5 @@ class Parser:
                         strategy(metadata).execute(executor)
                         self.logInterface.Info(type(strategy), 'отработала успешно')
             executor.shutdown(wait=True)
-
-        self.dbInterface.SaveSQLiteDatabaseFromRamToFile()
+        pathlib.Path(pathlib.Path(self.caseFolder).joinpath(self.caseName).joinpath(self.outputWriter.GetDBName())).unlink(missing_ok=True)
         return {self.moduleName: self.outputWriter.GetDBName()}

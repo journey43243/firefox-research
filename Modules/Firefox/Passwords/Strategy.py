@@ -11,10 +11,12 @@
 """
 
 import asyncio
+import pathlib
 from asyncio import Task
 from collections import namedtuple
 from typing import Iterable
 
+from Common.Routines import SQLiteDatabaseInterface
 from Modules.Firefox.Passwords.PasswordService import PasswordService
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator, Metadata
 
@@ -41,10 +43,29 @@ class PasswordStrategy(StrategyABC):
         """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = metadata.dbWriteInterface
+        self._dbWriteInterface = self._writeInterface("FirefoxPasswords", metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
         self._profile_path = metadata.profilePath
         self._service = PasswordService(self._profile_path, self._logInterface)
+
+    def createDataTable(self):
+        """
+               Создаёт таблицу 'passwords' для хранения паролей Firefox
+               и индексы по URL и пользователю.
+               """
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS passwords (
+                url TEXT,
+                user TEXT,
+                password TEXT,
+                profile_id INTEGER,
+                UNIQUE(url, user, password)
+            )'''
+        )
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_url_profile_id ON passwords(url, user)''')
+        self._logInterface.Info(type(self), 'Таблица с паролями успешно создана')
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+
 
     def read(self) -> Generator[list[tuple[str, str, str, int]], None, None]:
         """
@@ -119,6 +140,7 @@ class PasswordStrategy(StrategyABC):
         tasks : list[Task]
             Список, в который добавляются созданные задачи.
         """
+        self.createDataTable()
         for batch in self.read():
             task = asyncio.create_task(self.write(batch))
             tasks.append(task)

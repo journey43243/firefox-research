@@ -4,16 +4,18 @@
 контрактную модель для всех стратегий чтения и записи данных Firefox,
 а также структуру `Metadata`, включающую зависимости и параметры профиля.
 """
-
+import pathlib
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Generator, Iterable
 
+from Common.Routines import SQLiteDatabaseInterface
+
 # Метаданные, передаваемые стратегиям при инициализации
 Metadata = namedtuple(
     'Metadata',
-    'logInterface dbReadInterface dbWriteInterface profileId profilePath'
+    'logInterface dbReadInterface caseFolder profileId profilePath'
 )
 
 
@@ -27,6 +29,20 @@ class StrategyABC(ABC):
     Каждая дочерняя стратегия определяет собственный механизм
     извлечения и обработки данных, но интерфейс остаётся единым.
     """
+    def _writeInterface(self, moduleName: str, logInterface, caseFolder: pathlib.Path) -> SQLiteDatabaseInterface:
+        return SQLiteDatabaseInterface(str(caseFolder.joinpath(f"{moduleName}.sqlite")), logInterface, moduleName, True)
+
+    @abstractmethod
+    def createDataTable(self):
+        pass
+
+    # @abstractmethod
+    # def createInfoTable(self):
+    #     pass
+    #
+    # @abstractmethod
+    # def createHeadersTables(self):
+    #     pass
 
     @abstractmethod
     def read(self) -> Generator[list | str, None, None]:

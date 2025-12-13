@@ -4,12 +4,13 @@
 просмотров из таблицы `moz_places` профиля Firefox и сохраняет её
 в выходную базу данных.
 """
-
+import pathlib
 import sqlite3
 from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable
 
+from Common.Routines import SQLiteDatabaseInterface
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator, Metadata
 
 # Именованный кортеж, описывающий запись истории браузера Firefox
@@ -42,8 +43,22 @@ class HistoryStrategy(StrategyABC):
         """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = metadata.dbWriteInterface
+        self._dbWriteInterface = self._writeInterface("FirefoxHistory", metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
+    def createDataTable(self):
+        """
+               Создаёт таблицу 'history' для хранения истории посещённых сайтов
+               и индекс по URL.
+               """
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE history (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT,
+                title TEXT, visit_count INTEGER, typed INTEGER, last_visit_date text,
+                profile_id INTEGER)'''
+        )
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_history_url on history (url)''')
+        self._logInterface.Info(type(self), 'Таблица с историей создана')
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+
 
     def read(self) -> Generator[list[History], None, None]:
         """Считывает историю браузера из таблицы `moz_places`.
@@ -102,5 +117,7 @@ class HistoryStrategy(StrategyABC):
         self._logInterface.Info(type(self), 'Группа записей успешно загружена')
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
+        self.createDataTable()
         for batch in self.read():
             self.write(batch)
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

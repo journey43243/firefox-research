@@ -8,11 +8,13 @@
 import asyncio
 import json
 import os
+import pathlib
 from asyncio import Task
 from collections import namedtuple
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Iterable, Generator
 
+from Common.Routines import SQLiteDatabaseInterface
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
 
 # Именованный кортеж, описывающий структуру расширения Firefox
@@ -47,9 +49,39 @@ class ExtensionsStrategy(StrategyABC):
         """
         self._logInterface = metadata.logInterface
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = metadata.dbWriteInterface
+        self._dbWriteInterface = self._writeInterface("FirefoxExtensions", metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
         self._profile_path = metadata.profilePath
+
+    def createDataTable(self):
+        """
+                Создаёт таблицу 'extensions' для хранения расширений Firefox
+                и соответствующие индексы по id и profile_id.
+                """
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS extensions (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                version TEXT,
+                description TEXT,
+                type TEXT,
+                active INTEGER,
+                user_disabled INTEGER,
+                install_date INTEGER,
+                update_date INTEGER,
+                path TEXT,
+                source_url TEXT,
+                permissions TEXT,
+                location TEXT,
+                profile_id INTEGER
+            )'''
+        )
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX IF NOT EXISTS idx_extensions_id ON extensions (id)''')
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON extensions (profile_id)''')
+        self._logInterface.Info(type(self), 'Таблица с расширениями создана')
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+
 
     def read(self) -> Generator[list[Extension], None, None]:
         """Считывает расширения Firefox из файла extensions.json.
@@ -153,6 +185,8 @@ class ExtensionsStrategy(StrategyABC):
             )
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
+        self.createDataTable()
         for batch in self.read():
             if batch:  # Проверяем, что батч не пустой
                 executor.submit(self.write,batch)
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
