@@ -61,6 +61,30 @@ class HistoryStrategy(StrategyABC):
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_history_url on history (url)''')
         self._logInterface.Info(type(self), 'Таблица с историей создана')
 
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS Headers (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT,
+                Label TEXT,
+                Width INTEGER,
+                DataType TEXT,
+                Comment TEXT
+            )'''
+        )
+
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
+                ('id', 'ID записи', -1, 'int', 'Уникальный идентификатор записи'),
+                ('url', 'URL', -1, 'string', 'Адрес посещённой страницы'),
+                ('title', 'Заголовок', -1, 'string', 'Название страницы'),
+                ('visit_count', 'Количество посещений', -1, 'int', 'Сколько раз страница посещалась'),
+                ('typed', 'Введён вручную', -1, 'int', '1 — введён вручную, 0 — нет'),
+                ('last_visit_date', 'Дата последнего визита', -1, 'string', 'Время последнего посещения'),
+                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+            '''
+        )
+
     @property
     def help(self) -> str:
         return f"{self.moduleName}: Извлечение истории браузера firefox из places.sqlite"
@@ -126,4 +150,5 @@ class HistoryStrategy(StrategyABC):
         for batch in self.read():
             self.write(batch)
         self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

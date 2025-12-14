@@ -83,6 +83,36 @@ class ExtensionsStrategy(StrategyABC):
             '''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON extensions (profile_id)''')
         self._logInterface.Info(type(self), 'Таблица с расширениями создана')
 
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS Headers (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT,
+                Label TEXT,
+                Width INTEGER,
+                DataType TEXT,
+                Comment TEXT
+            )'''
+        )
+
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
+                ('id', 'ID расширения', -1, 'string', 'Уникальный идентификатор расширения'),
+                ('name', 'Название', -1, 'string', 'Имя расширения'),
+                ('version', 'Версия', -1, 'string', 'Версия установленного расширения'),
+                ('description', 'Описание', -1, 'string', 'Описание функционала расширения'),
+                ('type', 'Тип', -1, 'string', 'Тип расширения'),
+                ('active', 'Активно', -1, 'int', '1 — активно, 0 — отключено'),
+                ('user_disabled', 'Отключено пользователем', -1, 'int', '1 — пользователь отключил, 0 — нет'),
+                ('install_date', 'Дата установки', -1, 'int', 'Время установки расширения'),
+                ('update_date', 'Дата обновления', -1, 'int', 'Время последнего обновления'),
+                ('path', 'Путь', -1, 'string', 'Путь к файлам расширения'),
+                ('source_url', 'Источник', -1, 'string', 'URL источника расширения'),
+                ('permissions', 'Разрешения', -1, 'string', 'Список разрешений расширения'),
+                ('location', 'Расположение', -1, 'string', 'Где установлено расширение'),
+                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+            '''
+        )
     @property
     def help(self) -> str:
         return f"{self.moduleName}: Извлечение расширений из extensions.json"
@@ -195,4 +225,5 @@ class ExtensionsStrategy(StrategyABC):
             if batch:  # Проверяем, что батч не пустой
                 executor.submit(self.write,batch)
         self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

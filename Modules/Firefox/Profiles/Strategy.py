@@ -71,10 +71,19 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         и индекс для ускоренного поиска по пути.
         """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
+            '''CREATE TABLE profiles (ID INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
         )
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_profiles_path on profiles (path)''')
         self._logInterface.Info(type(self), 'Таблица с профилями создана.')
+
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE Headers (ID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, Label TEXT, Width INTEGER, DataType TEXT, Comment TEXT)'''
+        )
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES 
+            ('path', 'Путь до профиля', -1, 'string', 'Путь до профиля')'''
+        )
 
     @property
     def help(self) -> str:
@@ -126,4 +135,5 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         profiles = [profile for profile in self.read()]
         self.write(profiles)
         self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

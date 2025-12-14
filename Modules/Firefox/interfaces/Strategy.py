@@ -51,7 +51,6 @@ class StrategyABC(ABC):
         pass
 
     def createInfoTable(self, timestamp: str) -> None:
-        breakpoint()
         self._dbWriteInterface.ExecCommit(
             '''CREATE TABLE Info (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, value TEXT)'''
         )
@@ -62,9 +61,9 @@ class StrategyABC(ABC):
             ('Vendor', '{self.vendor}')
         ''')
 
-    # @abstractmethod
-    # def createHeadersTables(self):
-    #     pass
+    @abstractmethod
+    def createHeadersTables(self):
+        pass
 
     @abstractmethod
     def read(self) -> Generator[list | str, None, None]:

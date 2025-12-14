@@ -71,6 +71,32 @@ class BookmarksStrategy(StrategyABC):
         )
         self._logInterface.Info(type(self), 'Таблица с вкладками создана')
 
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS Headers (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT,
+                Label TEXT,
+                Width INTEGER,
+                DataType TEXT,
+                Comment TEXT
+            )'''
+        )
+
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
+                ('id', 'ID закладки', -1, 'int', 'Уникальный идентификатор закладки'),
+                ('type', 'Тип', -1, 'int', 'Тип записи (папка, закладка и т.д.)'),
+                ('place', 'ID места', -1, 'int', 'Ссылка на таблицу places'),
+                ('parent', 'Родитель', -1, 'int', 'ID родительской папки'),
+                ('position', 'Позиция', -1, 'int', 'Порядковый номер в списке'),
+                ('title', 'Название', -1, 'string', 'Название закладки'),
+                ('date_added', 'Дата добавления', -1, 'string', 'Когда закладка была создана'),
+                ('last_modified', 'Дата изменения', -1, 'string', 'Когда закладка была изменена'),
+                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+            '''
+        )
+
     @property
     def help(self) -> str:
         return f"{self.moduleName}: Извлечение закладок из places.sqlite"
@@ -135,4 +161,5 @@ class BookmarksStrategy(StrategyABC):
         for batch in self.read():
             executor.submit(self.write,batch)
         self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
