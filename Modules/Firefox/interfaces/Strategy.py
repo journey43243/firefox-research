@@ -29,17 +29,39 @@ class StrategyABC(ABC):
     Каждая дочерняя стратегия определяет собственный механизм
     извлечения и обработки данных, но интерфейс остаётся единым.
     """
+
+    vendor: str = "LabFramework"
+    moduleName: str | None = None
+    _dbWriteInterface: SQLiteDatabaseInterface | None = None
+
     def _writeInterface(self, moduleName: str, logInterface, caseFolder: pathlib.Path) -> SQLiteDatabaseInterface:
         return SQLiteDatabaseInterface(str(caseFolder.joinpath(f"{moduleName}.sqlite")), logInterface, moduleName, True)
+
+
+    def _timestamp(self, caseFolder: pathlib.Path) -> str:
+        return caseFolder.parts[-1]
+
+    @property
+    @abstractmethod
+    def help(self) -> str:
+        pass
 
     @abstractmethod
     def createDataTable(self):
         pass
 
-    # @abstractmethod
-    # def createInfoTable(self):
-    #     pass
-    #
+    def createInfoTable(self, timestamp: str) -> None:
+        breakpoint()
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE Info (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT, value TEXT)'''
+        )
+        self._dbWriteInterface.ExecCommit(
+            f'''INSERT INTO Info (key, value) VALUES ('Name', '{self.moduleName}'),
+            ('Help', '{self.help}'),
+            ('Timestamp', '{timestamp}'),
+            ('Vendor', '{self.vendor}')
+        ''')
+
     # @abstractmethod
     # def createHeadersTables(self):
     #     pass

@@ -53,8 +53,10 @@ class BookmarksStrategy(StrategyABC):
             записи, а также идентификатор профиля.
         """
         self._logInterface = metadata.logInterface
+        self.moduleName = "FirefoxBookmarks"
+        self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxBookmarks",metadata.logInterface,metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName,metadata.logInterface,metadata.caseFolder)
         self._profile_id = metadata.profileId
 
     def createDataTable(self):
@@ -68,6 +70,10 @@ class BookmarksStrategy(StrategyABC):
             PRIMARY KEY (id, profile_id))'''
         )
         self._logInterface.Info(type(self), 'Таблица с вкладками создана')
+
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлечение закладок из places.sqlite"
 
     def read(self) -> Generator[list['Bookmark'], None, None]:
         """
@@ -128,4 +134,5 @@ class BookmarksStrategy(StrategyABC):
         self.createDataTable()
         for batch in self.read():
             executor.submit(self.write,batch)
+        self.createInfoTable(self.timestamp)
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

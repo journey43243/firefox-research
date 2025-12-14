@@ -48,8 +48,10 @@ class ExtensionsStrategy(StrategyABC):
                 параметры профиля и интерфейс логирования.
         """
         self._logInterface = metadata.logInterface
+        self.moduleName = "FirefoxExtensions"
+        self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxExtensions", metadata.logInterface, metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
         self._profile_path = metadata.profilePath
 
@@ -80,7 +82,10 @@ class ExtensionsStrategy(StrategyABC):
         self._dbWriteInterface.ExecCommit(
             '''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON extensions (profile_id)''')
         self._logInterface.Info(type(self), 'Таблица с расширениями создана')
-        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлечение расширений из extensions.json"
 
 
     def read(self) -> Generator[list[Extension], None, None]:
@@ -189,4 +194,5 @@ class ExtensionsStrategy(StrategyABC):
         for batch in self.read():
             if batch:  # Проверяем, что батч не пустой
                 executor.submit(self.write,batch)
+        self.createInfoTable(self.timestamp)
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

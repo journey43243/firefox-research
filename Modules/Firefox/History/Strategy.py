@@ -42,9 +42,12 @@ class HistoryStrategy(StrategyABC):
                 параметры профиля и интерфейс логирования.
         """
         self._logInterface = metadata.logInterface
+        self.moduleName = "FirefoxHistory"
+        self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxHistory", metadata.logInterface, metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
+
     def createDataTable(self):
         """
                Создаёт таблицу 'history' для хранения истории посещённых сайтов
@@ -57,8 +60,10 @@ class HistoryStrategy(StrategyABC):
         )
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_history_url on history (url)''')
         self._logInterface.Info(type(self), 'Таблица с историей создана')
-        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
 
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлечение истории браузера firefox из places.sqlite"
 
     def read(self) -> Generator[list[History], None, None]:
         """Считывает историю браузера из таблицы `moz_places`.
@@ -120,4 +125,5 @@ class HistoryStrategy(StrategyABC):
         self.createDataTable()
         for batch in self.read():
             self.write(batch)
+        self.createInfoTable(self.timestamp)
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
