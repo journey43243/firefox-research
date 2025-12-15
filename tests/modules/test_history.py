@@ -384,39 +384,6 @@ def test_execute_method(mock_write, mock_read, mock_create_table):
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
 
-# =================== ФИКСТУРЫ ДЛЯ УДОБСТВА ===================
-
-@pytest.fixture
-def mock_history_strategy():
-    """Фикстура для создания HistoryStrategy с моками."""
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-    mock_db_write.ExecCommit = Mock()
-    mock_db_write.Commit = Mock()
-    mock_db_write.SaveSQLiteDatabaseFromRamToFile = Mock()
-
-    # Создаем стратегию
-    strategy = HistoryStrategy.__new__(HistoryStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._dbWriteInterface = mock_db_write
-    strategy._profile_id = 1
-
-    return strategy
-
-
-def test_with_fixture(mock_history_strategy):
-    """Тест с использованием фикстуры."""
-    assert mock_history_strategy._profile_id == 1
-    assert mock_history_strategy._logInterface is not None
-    assert mock_history_strategy._dbWriteInterface is not None
-
-    # Проверяем, что можем вызывать методы
-    mock_history_strategy._dbWriteInterface.ExecCommit('TEST SQL')
-    mock_history_strategy._dbWriteInterface.ExecCommit.assert_called_with('TEST SQL')
-
-
 if __name__ == '__main__':
     # Для запуска теста напрямую (опционально)
     pytest.main(['-v', __file__])

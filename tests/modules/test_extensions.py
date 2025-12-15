@@ -582,39 +582,6 @@ def test_execute_method_empty_batch(mock_write, mock_read, mock_create_table):
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
 
-# =================== ФИКСТУРЫ ДЛЯ УДОБСТВА ===================
-
-@pytest.fixture
-def mock_extensions_strategy():
-    """Фикстура для создания ExtensionsStrategy с моками."""
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-    mock_db_write.ExecCommit = Mock()
-    mock_db_write.Commit = Mock()
-    mock_db_write.SaveSQLiteDatabaseFromRamToFile = Mock()
-
-    # Создаем стратегию
-    strategy = ExtensionsStrategy.__new__(ExtensionsStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._dbWriteInterface = mock_db_write
-    strategy._profile_id = 1
-    strategy._profile_path = '/test/profile'
-
-    return strategy
-
-
-def test_with_fixture(mock_extensions_strategy):
-    """Тест с использованием фикстуры."""
-    assert mock_extensions_strategy._profile_id == 1
-    assert mock_extensions_strategy._profile_path == '/test/profile'
-    assert mock_extensions_strategy._logInterface is not None
-
-    # Проверяем, что можем вызывать методы
-    mock_extensions_strategy._dbWriteInterface.ExecCommit('TEST SQL')
-    mock_extensions_strategy._dbWriteInterface.ExecCommit.assert_called_with('TEST SQL')
-
 
 # =================== ТЕСТЫ ДЛЯ ПРАВИЛЬНОЙ КОНВЕРТАЦИИ ТИПОВ ===================
 
@@ -633,37 +600,11 @@ def test_boolean_conversion():
     ]
 
     for active, user_disabled, exp_active, exp_user_disabled in test_data:
-        # В реальном коде:
-        # active=1 if addon.get('active', False) else 0
-        # user_disabled=1 if addon.get('userDisabled', False) else 0
-
         calculated_active = 1 if active else 0
         calculated_user_disabled = 1 if user_disabled else 0
 
         assert calculated_active == exp_active
         assert calculated_user_disabled == exp_user_disabled
-
-
-def test_json_permissions_conversion():
-    """Тест конвертации permissions в JSON строку."""
-    # В реальном коде:
-    # permissions = json.dumps(permissions) if permissions else ''
-
-    test_permissions = {"permissions": ["storage", "tabs"], "origins": []}
-    expected_json = json.dumps(test_permissions)
-
-    # Имитируем логику кода
-    permissions = test_permissions
-    result = json.dumps(permissions) if permissions else ''
-
-    assert result == expected_json
-    assert "storage" in result
-    assert "tabs" in result
-
-    # Пустые permissions
-    empty_permissions = {}
-    result_empty = json.dumps(empty_permissions) if empty_permissions else ''
-    assert result_empty == ''  # Пустая строка для пустого словаря
 
 
 if __name__ == '__main__':

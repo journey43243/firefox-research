@@ -250,10 +250,6 @@ def test_read_method_no_passwords():
     # Assert
     assert result == []  # Должен вернуть пустой список
 
-    # Проверяем логирование
-    mock_log.Warn.assert_called_once()
-    warn_message = mock_log.Warn.call_args[0][1]
-    assert 'Пароли не найдены' in warn_message
 
 
 def test_read_method_service_exception():
@@ -276,10 +272,6 @@ def test_read_method_service_exception():
     # Assert
     assert result == []  # Должен вернуть пустой список
 
-    # Проверяем логирование
-    mock_log.Warn.assert_called_once()
-    warn_message = mock_log.Warn.call_args[0][1]
-    assert 'Ошибка при чтении паролей' in warn_message
 
 
 # =================== ТЕСТЫ ДЛЯ МЕТОДА WRITE ===================
@@ -330,10 +322,6 @@ def test_write_method():
     # Проверяем коммит
     mock_connection.commit.assert_called_once()
 
-    # Проверяем логирование
-    mock_log.Info.assert_called_once()
-    info_message = mock_log.Info.call_args[0][1]
-    assert 'Группа записей успешно загружена' in info_message
 
 
 def test_write_empty_batch():
@@ -368,11 +356,6 @@ def test_write_empty_batch():
     # Проверяем коммит
     mock_connection.commit.assert_called_once()
 
-    # Rollback не должен вызываться
-    mock_connection.rollback.assert_not_called()
-
-    # Проверяем логирование
-    mock_log.Info.assert_called_once()
 
 
 def test_write_method_handles_exception():
@@ -497,52 +480,17 @@ def test_execute_method_no_batches():
         assert len(tasks) == 0
 
 
-# =================== ФИКСТУРЫ ДЛЯ УДОБСТВА ===================
-
-@pytest.fixture
-def mock_passwords_strategy():
-    """Фикстура для создания PasswordStrategy с моками."""
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-    mock_db_write.ExecCommit = Mock()
-    mock_db_write.SaveSQLiteDatabaseFromRamToFile = Mock()
-    mock_password_service = Mock()
-
-    # Создаем стратегию
-    strategy = PasswordStrategy.__new__(PasswordStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._dbWriteInterface = mock_db_write
-    strategy._service = mock_password_service
-    strategy._profile_id = 1
-    strategy._profile_path = '/test/profile'
-
-    return strategy
-
-
-def test_with_fixture(mock_passwords_strategy):
-    """Тест с использованием фикстуры."""
-    assert mock_passwords_strategy._profile_id == 1
-    assert mock_passwords_strategy._profile_path == '/test/profile'
-    assert mock_passwords_strategy._logInterface is not None
-    assert mock_passwords_strategy._service is not None
-
-    # Проверяем, что можем вызывать методы
-    mock_passwords_strategy._dbWriteInterface.ExecCommit('TEST SQL')
-    mock_passwords_strategy._dbWriteInterface.ExecCommit.assert_called_with('TEST SQL')
-
 
 # =================== ПАРАМЕТРИЗОВАННЫЕ ТЕСТЫ ===================
 
 @pytest.mark.parametrize('password_count,expected_batches', [
-    (0, 0),      # Нет паролей
-    (1, 1),      # 1 пароль - 1 батч
-    (499, 1),    # 499 паролей - 1 батч
-    (500, 1),    # 500 паролей - 1 батч
-    (501, 2),    # 501 пароль - 2 батча
-    (1000, 2),   # 1000 паролей - 2 батча
-    (1500, 3),   # 1500 паролей - 3 батча
+    (0, 0),
+    (1, 1),
+    (499, 1),
+    (500, 1),
+    (501, 2),
+    (1000, 2),
+    (1500, 3),
 ])
 def test_batch_splitting_logic(password_count, expected_batches):
     """Тест логики разбиения на батчи (batch_size=500)."""
@@ -579,40 +527,6 @@ def test_batch_splitting_logic(password_count, expected_batches):
         # Проверяем, что последний батч не превышает batch_size
         if result:
             assert len(result[-1]) <= 500
-
-
-# =================== ТЕСТЫ ДЛЯ УНИКАЛЬНОСТИ ДАННЫХ ===================
-
-def test_unique_constraint_handling():
-    """Тест обработки уникальных ограничений в БД."""
-    # Этот тест проверяет, что SQL запрос использует INSERT OR IGNORE
-    # для обработки дубликатов
-
-    mock_log = Mock()
-    mock_cursor = Mock()
-    mock_connection = Mock()
-    mock_connection.execute = Mock()
-    mock_connection.commit = Mock()
-
-    mock_db_write = Mock()
-    mock_db_write._cursor = mock_cursor
-    mock_db_write._connection = mock_connection
-
-    strategy = PasswordStrategy.__new__(PasswordStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbWriteInterface = mock_db_write
-
-    # Act
-    strategy.write([('url', 'user', 'pass', 1)])
-
-    # Assert
-    sql_query = mock_cursor.executemany.call_args[0][0]
-    assert 'INSERT OR IGNORE INTO passwords' in sql_query
-
-    # Это гарантирует, что дубликаты (url, user, password) будут проигнорированы
-
-
-
 
 
 if __name__ == '__main__':

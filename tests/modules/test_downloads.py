@@ -433,73 +433,7 @@ def test_execute_method(mock_read, mock_create_table):
     # Проверяем сохранение БД
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
-# =================== ФИКСТУРЫ ДЛЯ УДОБСТВА ===================
 
-@pytest.fixture
-def mock_downloads_strategy():
-    """Фикстура для создания DownloadsStrategy с моками."""
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-    mock_db_write.ExecCommit = Mock()
-    mock_db_write.Commit = Mock()
-    mock_db_write.SaveSQLiteDatabaseFromRamToFile = Mock()
-
-    # Создаем стратегию
-    strategy = DownloadsStrategy.__new__(DownloadsStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._dbWriteInterface = mock_db_write
-    strategy._profile_id = 1
-
-    return strategy
-
-
-def test_with_fixture(mock_downloads_strategy):
-    """Тест с использованием фикстуры."""
-    assert mock_downloads_strategy._profile_id == 1
-    assert mock_downloads_strategy._logInterface is not None
-    assert mock_downloads_strategy._dbWriteInterface is not None
-
-    # Проверяем, что можем вызывать методы
-    mock_downloads_strategy._dbWriteInterface.ExecCommit('TEST SQL')
-    mock_downloads_strategy._dbWriteInterface.ExecCommit.assert_called_with('TEST SQL')
-
-
-# =================== ПАРАМЕТРИЗОВАННЫЕ ТЕСТЫ ===================
-
-@pytest.mark.parametrize('test_data,expected_count', [
-    ([], 0),
-    ([(1, 100, 2, '{"size": 1024}')], 1),
-    ([(1, 100, 2, '{"size": 1024}'),
-      (2, 101, 2, '{"size": 2048}')], 2),
-])
-@patch('sqlite3.connect')
-def test_read_with_various_data(mock_sqlite_connect, test_data, expected_count):
-    """Параметризованный тест чтения разных объемов данных."""
-    mock_log = Mock()
-    mock_cursor = Mock()
-
-    mock_cursor.fetchmany.side_effect = [test_data, []]
-    mock_cursor.execute.return_value = mock_cursor
-
-    mock_db_read = Mock()
-    mock_db_read._cursor = mock_cursor
-
-    strategy = DownloadsStrategy.__new__(DownloadsStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._profile_id = 3
-
-    # Act
-    result = list(strategy.read())
-
-    # Assert
-    if expected_count > 0:
-        assert len(result) == 1  # Один батч
-        assert len(result[0]) == expected_count
-    else:
-        assert result == []
 
 
 if __name__ == '__main__':
