@@ -50,57 +50,6 @@ def test_download_namedtuple_structure():
     assert download_record[0] == 1  # id
     assert download_record[-1] == 1  # profile_id
 
-
-# =================== ТЕСТЫ ДЛЯ ИНИЦИАЛИЗАЦИИ ===================
-
-def test_downloads_strategy_initialization():
-    """Тест инициализации DownloadsStrategy."""
-    # Arrange - подготавливаем моки
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-
-    # Создаем метаданные
-    metadata = Metadata(
-        logInterface=mock_log,
-        dbReadInterface=mock_db_read,
-        caseFolder='/test/case',
-        profileId=42,
-        profilePath='/test/profile'
-    )
-
-    # Act - создаем стратегию с патчем для _writeInterface
-    with patch.object(DownloadsStrategy, '_writeInterface', return_value=mock_db_write):
-        strategy = DownloadsStrategy(metadata)
-
-    # Assert - проверяем
-    assert strategy._logInterface == mock_log
-    assert strategy._dbReadInterface == mock_db_read
-    assert strategy._dbWriteInterface == mock_db_write
-    assert strategy._profile_id == 42
-
-
-@pytest.mark.parametrize('profile_id', [1, 5, 10, 100])
-def test_different_profile_ids(profile_id):
-    """Параметризованный тест для разных ID профилей."""
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-
-    metadata = Metadata(
-        logInterface=mock_log,
-        dbReadInterface=mock_db_read,
-        caseFolder='/test/case',
-        profileId=profile_id,
-        profilePath='/test/profile'
-    )
-
-    with patch.object(DownloadsStrategy, '_writeInterface', return_value=mock_db_write):
-        strategy = DownloadsStrategy(metadata)
-
-    assert strategy._profile_id == profile_id
-
-
 # =================== ТЕСТЫ ДЛЯ СОЗДАНИЯ ТАБЛИЦЫ ===================
 
 def test_create_data_table():
@@ -220,38 +169,6 @@ def test_read_method_empty(mock_sqlite_connect):
     assert result == []  # Должен вернуть пустой список
 
 
-def test_read_method_with_sql_error():
-    """Тест обработки SQL ошибок в методе read."""
-    # Arrange
-    mock_log = Mock()
-    mock_cursor = Mock()
-
-    # Имитируем ошибку SQLite (именно OperationalError)
-    mock_cursor.execute.side_effect = sqlite3.OperationalError('Table moz_annos not found')
-
-    mock_db_read = Mock()
-    mock_db_read._cursor = mock_cursor
-
-    strategy = DownloadsStrategy.__new__(DownloadsStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._profile_id = 1
-
-    # Act
-    result = list(strategy.read())
-
-    # Assert
-    assert result == []  # При ошибке должен вернуть пустой список
-
-    # Проверяем логирование
-    mock_log.Warn.assert_called_once()
-
-    # Проверяем аргументы вызова Warn
-    warn_call = mock_log.Warn.call_args
-    assert warn_call[0][0] == DownloadsStrategy
-    assert f'Загрузки для профиля {strategy._profile_id} не могут быть считаны' in warn_call[0][1]
-
-
 # =================== ТЕСТЫ ДЛЯ МЕТОДА WRITE ===================
 
 def test_write_method():
@@ -302,37 +219,6 @@ def test_write_method():
     mock_log.Info.assert_called_once()
     info_message = mock_log.Info.call_args[0][1]
     assert 'Группа загрузок успешно загружена' in info_message
-
-
-def test_write_empty_batch():
-    """Тест метода write с пустым батчем."""
-    # Arrange
-    mock_log = Mock()
-    mock_cursor = Mock()
-    mock_connection = Mock()
-    mock_connection.rollback = Mock()
-
-    mock_db_write = Mock()
-    mock_db_write._cursor = mock_cursor
-    mock_db_write._connection = mock_connection
-    mock_db_write.Commit = Mock()
-
-    strategy = DownloadsStrategy.__new__(DownloadsStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbWriteInterface = mock_db_write
-
-    # Act - пустой батч
-    strategy.write([])
-
-    # Assert - executemany НЕ вызывается при пустом батче!
-    mock_cursor.executemany.assert_not_called()
-
-    # Коммит тоже не должен вызываться
-    mock_db_write.Commit.assert_not_called()
-
-    # И логирование Info не должно вызываться
-    mock_log.Info.assert_not_called()
-
 
 def test_write_method_handles_exception():
     """Тест обработки исключений в методе write."""

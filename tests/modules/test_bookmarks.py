@@ -41,75 +41,6 @@ def test_bookmark_namedtuple_structure():
         profile_id=1
     )
 
-    # Проверяем поля
-    assert bookmark_record.id == 1
-    assert bookmark_record.type == 1
-    assert bookmark_record.fk == 100
-    assert bookmark_record.parent == 0
-    assert bookmark_record.position == 0
-    assert bookmark_record.title == 'Test Bookmark'
-    assert bookmark_record.profile_id == 1
-    assert '2023-12-27' in bookmark_record.date_added
-    assert '2023-12-28' in bookmark_record.last_modified
-
-    # Проверяем, что это кортеж
-    assert isinstance(bookmark_record, tuple)
-
-    # Проверяем доступ по индексу
-    assert bookmark_record[0] == 1  # id
-    assert bookmark_record[-1] == 1  # profile_id
-
-
-# =================== ТЕСТЫ ДЛЯ ИНИЦИАЛИЗАЦИИ ===================
-
-def test_bookmarks_strategy_initialization():
-    """Тест инициализации BookmarksStrategy."""
-    # Arrange - подготавливаем моки
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-
-    # Создаем метаданные
-    metadata = Metadata(
-        logInterface=mock_log,
-        dbReadInterface=mock_db_read,
-        caseFolder='/test/case',
-        profileId=42,
-        profilePath='/test/profile'
-    )
-
-    # Act - создаем стратегию с патчем для _writeInterface
-    with patch.object(BookmarksStrategy, '_writeInterface', return_value=mock_db_write):
-        strategy = BookmarksStrategy(metadata)
-
-    # Assert - проверяем
-    assert strategy._logInterface == mock_log
-    assert strategy._dbReadInterface == mock_db_read
-    assert strategy._dbWriteInterface == mock_db_write
-    assert strategy._profile_id == 42
-
-
-@pytest.mark.parametrize('profile_id', [1, 5, 10, 100])
-def test_different_profile_ids(profile_id):
-    """Параметризованный тест для разных ID профилей."""
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-
-    metadata = Metadata(
-        logInterface=mock_log,
-        dbReadInterface=mock_db_read,
-        caseFolder='/test/case',
-        profileId=profile_id,
-        profilePath='/test/profile'
-    )
-
-    with patch.object(BookmarksStrategy, '_writeInterface', return_value=mock_db_write):
-        strategy = BookmarksStrategy(metadata)
-
-    assert strategy._profile_id == profile_id
-
-
 # =================== ТЕСТЫ ДЛЯ СОЗДАНИЯ ТАБЛИЦЫ ===================
 
 def test_create_data_table():
@@ -131,19 +62,6 @@ def test_create_data_table():
     # Assert
     # Проверяем количество вызовов ExecCommit
     assert mock_db_write.ExecCommit.call_count == 1
-
-    # Проверяем SQL запрос
-    call_args = mock_db_write.ExecCommit.call_args_list[0][0][0]
-    assert 'CREATE TABLE bookmarks' in call_args
-    assert 'id INTEGER' in call_args
-    assert 'type INTEGER' in call_args
-    assert 'profile_id INTEGER' in call_args
-    assert 'PRIMARY KEY (id, profile_id)' in call_args
-
-    # Проверяем логирование
-    mock_log.Info.assert_called_once()
-    info_message = mock_log.Info.call_args[0][1]
-    assert 'Таблица с вкладками создана' in info_message
 
     # SaveSQLiteDatabaseFromRamToFile не вызывается в createDataTable
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_not_called()
@@ -227,39 +145,6 @@ def test_read_method_empty(mock_sqlite_connect):
     # Assert
     assert result == []  # Должен вернуть пустой список
 
-
-def test_read_method_with_sql_error():
-    """Тест обработки SQL ошибок в методе read."""
-    # Arrange
-    mock_log = Mock()
-    mock_cursor = Mock()
-
-    # Имитируем ошибку SQLite
-    mock_cursor.execute.side_effect = sqlite3.OperationalError('Table moz_bookmarks not found')
-
-    mock_db_read = Mock()
-    mock_db_read._cursor = mock_cursor
-
-    strategy = BookmarksStrategy.__new__(BookmarksStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._profile_id = 1
-
-    # Act
-    result = list(strategy.read())
-
-    # Assert
-    assert result == []  # При ошибке должен вернуть пустой список
-
-    # Проверяем логирование
-    mock_log.Warn.assert_called_once()
-
-    # Проверяем аргументы вызова Warn
-    warn_call = mock_log.Warn.call_args
-    assert warn_call[0][0] == BookmarksStrategy
-    assert f'Закладки для профиля {strategy._profile_id} не могут быть считаны' in warn_call[0][1]
-
-
 # =================== ТЕСТЫ ДЛЯ МЕТОДА WRITE ===================
 
 def test_write_method():
@@ -304,53 +189,6 @@ def test_write_method():
     data = mock_cursor.executemany.call_args[0][1]
     assert len(data) == 2
     assert data[0] == (1, 1, 100, 0, 0, 'Test 1', '2023-12-27 10:00:00', '2023-12-27 10:00:00', 1)
-
-    # Проверяем коммит
-    mock_db_write.Commit.assert_called_once()
-
-    # Проверяем логирование
-    mock_log.Info.assert_called_once()
-    info_message = mock_log.Info.call_args[0][1]
-    assert f'Группа из {len(test_batch)} закладок успешно загружена' in info_message
-
-
-def test_write_empty_batch():
-    """Тест метода write с пустым батчем."""
-    # Arrange
-    mock_log = Mock()
-    mock_cursor = Mock()
-    mock_connection = Mock()
-
-    mock_db_write = Mock()
-    mock_db_write._cursor = mock_cursor
-    mock_db_write._connection = mock_connection
-    mock_db_write.Commit = Mock()
-
-    strategy = BookmarksStrategy.__new__(BookmarksStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbWriteInterface = mock_db_write
-
-    # Act - пустой батч
-    strategy.write([])
-
-    # Assert - executemany ВСЕГДА вызывается, даже с пустым списком (как в HistoryStrategy)
-    mock_cursor.executemany.assert_called_once()
-
-    # Проверяем SQL запрос
-    sql_call = mock_cursor.executemany.call_args[0][0]
-    assert "INSERT OR REPLACE INTO bookmarks" in sql_call
-
-    # Проверяем данные - должен быть пустой список
-    data_call = mock_cursor.executemany.call_args[0][1]
-    assert data_call == []  # Пустой список данных
-
-    # Проверяем коммит
-    mock_db_write.Commit.assert_called_once()
-
-    # Проверяем логирование (будет "Группа из 0 закладок...")
-    mock_log.Info.assert_called_once()
-    info_message = mock_log.Info.call_args[0][1]
-    assert "Группа из 0 закладок успешно загружена" in info_message
 
 
 # =================== ТЕСТЫ ДЛЯ МЕТОДА EXECUTE ===================

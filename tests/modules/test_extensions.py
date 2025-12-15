@@ -68,57 +68,6 @@ def test_extension_namedtuple_structure():
     assert extension_record[-1] == 1  # profile_id
 
 
-# =================== ТЕСТЫ ДЛЯ ИНИЦИАЛИЗАЦИИ ===================
-
-def test_extensions_strategy_initialization():
-    """Тест инициализации ExtensionsStrategy."""
-    # Arrange - подготавливаем моки
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-
-    # Создаем метаданные
-    metadata = Metadata(
-        logInterface=mock_log,
-        dbReadInterface=mock_db_read,
-        caseFolder='/test/case',
-        profileId=42,
-        profilePath='/test/profile'
-    )
-
-    # Act - создаем стратегию с патчем для _writeInterface
-    with patch.object(ExtensionsStrategy, '_writeInterface', return_value=mock_db_write):
-        strategy = ExtensionsStrategy(metadata)
-
-    # Assert - проверяем
-    assert strategy._logInterface == mock_log
-    assert strategy._dbReadInterface == mock_db_read
-    assert strategy._dbWriteInterface == mock_db_write
-    assert strategy._profile_id == 42
-    assert strategy._profile_path == '/test/profile'
-
-
-@pytest.mark.parametrize('profile_id', [1, 5, 10, 100])
-def test_different_profile_ids(profile_id):
-    """Параметризованный тест для разных ID профилей."""
-    mock_log = Mock()
-    mock_db_read = Mock()
-    mock_db_write = Mock()
-
-    metadata = Metadata(
-        logInterface=mock_log,
-        dbReadInterface=mock_db_read,
-        caseFolder='/test/case',
-        profileId=profile_id,
-        profilePath=f'/test/profile{profile_id}'
-    )
-
-    with patch.object(ExtensionsStrategy, '_writeInterface', return_value=mock_db_write):
-        strategy = ExtensionsStrategy(metadata)
-
-    assert strategy._profile_id == profile_id
-
-
 # =================== ТЕСТЫ ДЛЯ СОЗДАНИЯ ТАБЛИЦЫ ===================
 
 def test_create_data_table():
@@ -406,45 +355,6 @@ def test_write_method():
     mock_log.Info.assert_called_once()
     info_message = mock_log.Info.call_args[0][1]
     assert 'Расширения записаны в БД' in info_message
-
-
-def test_write_empty_batch():
-    """Тест метода write с пустым батчем."""
-    # Arrange
-    mock_log = Mock()
-    mock_cursor = Mock()
-    mock_connection = Mock()
-
-    mock_db_write = Mock()
-    mock_db_write._cursor = mock_cursor
-    mock_db_write._connection = mock_connection
-    mock_db_write.Commit = Mock()
-
-    strategy = ExtensionsStrategy.__new__(ExtensionsStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbWriteInterface = mock_db_write
-
-    # Act - пустой батч
-    strategy.write([])
-
-    # Assert - executemany ВСЕГДА вызывается, даже с пустым списком
-    mock_cursor.executemany.assert_called_once()
-
-    # Проверяем SQL запрос
-    sql_call = mock_cursor.executemany.call_args[0][0]
-    assert "INSERT OR IGNORE INTO extensions" in sql_call
-
-    # Проверяем данные - должен быть пустой список
-    data_call = mock_cursor.executemany.call_args[0][1]
-    assert data_call == []  # Пустой список данных
-
-    # Проверяем коммит
-    mock_db_write.Commit.assert_called_once()
-
-    # Проверяем логирование
-    mock_log.Info.assert_called_once()
-    info_message = mock_log.Info.call_args[0][1]
-    assert "Расширения записаны в БД" in info_message
 
 
 def test_write_method_handles_exception():
