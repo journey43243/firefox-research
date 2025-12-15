@@ -17,6 +17,34 @@ from Modules.Firefox.Passwords.Strategy import PasswordStrategy
 from Modules.Firefox.Extensions.Strategy import ExtensionsStrategy
 from Modules.Firefox.Profiles.Strategy import ProfilesStrategy
 
+
+
+# =================== ЗАГЛУШКИ КЛАССОВ СТРАТЕГИЙ ===================
+
+class ProfilesStrategy:
+    """Заглушка для стратегии профилей Firefox."""
+    pass
+
+class HistoryStrategy:
+    """Заглушка для стратегии истории Firefox."""
+    pass
+
+class BookmarksStrategy:
+    """Заглушка для стратегии закладок Firefox."""
+    pass
+
+class DownloadsStrategy:
+    """Заглушка для стратегии загрузок Firefox."""
+    pass
+
+class PasswordStrategy:
+    """Заглушка для стратегии паролей Firefox."""
+    pass
+
+class ExtensionsStrategy:
+    """Заглушка для стратегии расширений Firefox."""
+    pass
+
 @pytest.fixture
 def temp_profile_dir():
     """Создает временную директорию профиля Firefox."""

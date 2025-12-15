@@ -13,32 +13,6 @@ from pathlib import Path
 import shutil
 
 
-# =================== ЗАГЛУШКИ КЛАССОВ СТРАТЕГИЙ ===================
-
-class ProfilesStrategy:
-    """Заглушка для стратегии профилей Firefox."""
-    pass
-
-class HistoryStrategy:
-    """Заглушка для стратегии истории Firefox."""
-    pass
-
-class BookmarksStrategy:
-    """Заглушка для стратегии закладок Firefox."""
-    pass
-
-class DownloadsStrategy:
-    """Заглушка для стратегии загрузок Firefox."""
-    pass
-
-class PasswordStrategy:
-    """Заглушка для стратегии паролей Firefox."""
-    pass
-
-class ExtensionsStrategy:
-    """Заглушка для стратегии расширений Firefox."""
-    pass
-
 # =================== ОСНОВНОЙ ИНТЕГРАЦИОННЫЙ ТЕСТ ===================
 
 @pytest.mark.integration
@@ -64,37 +38,7 @@ async def test_complete_firefox_data_extraction(temp_firefox_profile, mock_modul
             patch('Modules.Firefox.Extensions.Strategy.ExtensionsStrategy',
                   return_value=mock_modules["ExtensionsStrategy"]):
 
-        # Импортируем реальные классы (они будут заменены моками)
-        try:
-            from Modules.Firefox.Profiles.Strategy import ProfilesStrategy
-            from Modules.Firefox.History.Strategy import HistoryStrategy
-            from Modules.Firefox.Bookmarks.Strategy import BookmarksStrategy
-            from Modules.Firefox.Downloads.Strategy import DownloadsStrategy
-            from Modules.Firefox.Password.Strategy import PasswordStrategy
-            from Modules.Firefox.Extensions.Strategy import ExtensionsStrategy
 
-            REAL_MODULES = True
-        except ImportError:
-            REAL_MODULES = False
-
-            # Создаем заглушки
-            class ProfilesStrategy:
-                pass
-
-            class HistoryStrategy:
-                pass
-
-            class BookmarksStrategy:
-                pass
-
-            class DownloadsStrategy:
-                pass
-
-            class PasswordStrategy:
-                pass
-
-            class ExtensionsStrategy:
-                pass
 
         # Создаем стратегии с моками
         strategies = {
@@ -509,9 +453,12 @@ def test_database_integration(temp_firefox_profile, mock_log_interface):
 
     conn.close()
 
+    from pathlib import Path
+
     # Удаляем временную базу данных
-    import os
-    os.unlink(temp_db.name)
+    temp_db_path = Path(temp_db.name)
+    if temp_db_path.exists():
+        temp_db_path.unlink()
 
     print("\n" + "=" * 60)
     print("ИНТЕГРАЦИЯ С БАЗОЙ ДАННЫХ ПРОТЕСТИРОВАНА")
