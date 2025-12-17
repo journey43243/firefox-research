@@ -18,41 +18,16 @@ from Modules.Firefox.Bookmarks.Strategy import BookmarksStrategy
 from Modules.Firefox.Downloads.Strategy import DownloadsStrategy
 from Modules.Firefox.Extensions.Strategy import ExtensionsStrategy
 from Modules.Firefox.Favicons.Strategy import FaviconsStrategy
+from Modules.Firefox.Cookies.Strategy import CookiesStrategy
+
+
 
 class Parser:
     """
     Класс Parser управляет процессом извлечения данных Firefox.
-
-    Инициализирует стратегии для разных типов данных (профили, история,
-    пароли, закладки, загрузки, расширения) и выполняет их асинхронно.
-
-    Атрибуты:
-        logInterface: Интерфейс логирования.
-        caseFolder (str): Путь к каталогу кейса.
-        caseName (str): Название кейса.
-        dbInterface: Интерфейс для работы с результирующей базой данных.
-        outputFileName (str): Имя результирующего файла БД.
-        outputWriter: Интерфейс записи данных.
-        moduleName (str): Название модуля (Firefox).
-        dbWritePath (str): Путь к результирующей базе данных.
     """
 
     def __init__(self, parameters: dict) -> None:
-        """
-        Инициализирует объект Parser с параметрами кейса.
-
-        Parameters
-        ----------
-        parameters : dict
-            Словарь с параметрами:
-                LOG: интерфейс логирования,
-                CASEFOLDER: каталог кейса,
-                CASENAME: имя кейса,
-                DBCONNECTION: интерфейс БД,
-                OUTPUTFILENAME: имя выходного файла БД,
-                OUTPUTWRITER: объект для записи данных,
-                MODULENAME: название модуля.
-        """
         self.logInterface = parameters['LOG']
         self.caseFolder = parameters['CASEFOLDER']
         self.caseName = parameters['CASENAME']
@@ -63,24 +38,6 @@ class Parser:
         self.dbWritePath = f'{self.caseFolder}/{self.caseName}/{self.outputFileName}'
 
     async def Start(self):
-        """
-        Основной метод запуска парсинга Firefox.
-
-        Поведение:
-            1. Проверяет соединение с результирующей базой данных.
-            2. Создаёт все необходимые таблицы через SQLiteStarter.
-            3. Считывает пути профилей Firefox через ProfilesStrategy.
-            4. Для каждого профиля создаёт интерфейс чтения БД.
-            5. Формирует объект Metadata для каждой стратегии.
-            6. Асинхронно запускает стратегии History, Passwords, Bookmarks,
-               Downloads и Extensions.
-            7. После завершения всех задач сохраняет БД в файл.
-
-        Returns
-        -------
-        dict
-            Словарь с ключом moduleName и значением имени результирующей БД.
-        """
         if not self.dbInterface.IsConnected():
             return
 
@@ -100,14 +57,6 @@ class Parser:
                 profilePath + r'\places.sqlite', self.logInterface, 'Firefox', False
             )
             
-            dbFaviconsReadInterface = SQLiteDatabaseInterface(
-                profilePath + r'\favicons.sqlite', self.logInterface, 'Firefox', False
-            )
-
-            favicons_metadata = Metadata(
-                self.logInterface, dbFaviconsReadInterface, self.dbInterface, id + 1, profilePath
-            )
-            
             metadata = Metadata(
                 self.logInterface, dbReadIntreface, self.dbInterface, id + 1, profilePath
             )
@@ -117,8 +66,6 @@ class Parser:
             for strategy in StrategyABC.__subclasses__():
                 if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
                     continue
-                elif strategy.__name__ == 'FaviconsStrategy':
-                    await strategy(favicons_metadata).execute(tasks)
                 else:
                     await strategy(metadata).execute(tasks)
                     self.logInterface.Info(type(strategy), 'отработала успешно')
