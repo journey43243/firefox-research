@@ -62,7 +62,7 @@ class CookiesStrategy(StrategyABC):
         и индекс по base_domain.
         """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE IF NOT EXISTS cookies (
+            '''CREATE TABLE IF NOT EXISTS Data (
                 id INTEGER,
                 origin_attributes TEXT,
                 name TEXT,
@@ -244,7 +244,7 @@ class CookiesStrategy(StrategyABC):
             print(f"Ошибка SQLite при чтении cookies: {e}")
 
     def write(self, batch: Iterable[Cookie]) -> None:
-        data = [tuple(c) for c in batch]  # ← КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ
+        data = [tuple(c) for c in batch]
 
         self._dbWriteInterface._cursor.executemany(
             '''INSERT OR REPLACE INTO cookies
