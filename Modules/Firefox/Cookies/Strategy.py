@@ -33,7 +33,7 @@ class CookiesStrategy(StrategyABC):
         self._profile_id = metadata.profileId
         self._profile_path = metadata.profilePath
         self._cookies_db_path = pathlib.Path(metadata.profilePath).joinpath('cookies.sqlite')
-        self._dbReadInterface = SQLiteDatabaseInterface(str(self._cookies_db_path), self._logInterface, metadata.caseFolder, moduleRAMProcessing=True)
+        self._dbReadInterface = SQLiteDatabaseInterface(str(self._cookies_db_path), self._logInterface, metadata.caseFolder, moduleRAMProcessing=False)
 
     def _timestamp_to_datetime(self, timestamp_microseconds: int) -> str:
         """Конвертирует временную метку в строку даты."""
@@ -130,23 +130,16 @@ class CookiesStrategy(StrategyABC):
     def help(self) -> str:
         return f"{self.moduleName}: Извлечение cookies из cookies.sqlite"
 
-    def read(self) -> Generator[list[tuple], None, None]:
-
+    def read(self) -> Generator[list[Cookie], None, None]:
+        """
+        Читает cookies из cookies.sqlite пакетами по 500 строк.
+        """
         try:
-            # Проверяем таблицу
-            query = self._dbReadInterface._cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='moz_cookies'"
-            )
-            if not query.fetchall():
-                self._logInterface.Warn(
-                    type(self),
-                    f"Таблица moz_cookies отсутствует в cookies.sqlite профиля {self._profile_id}"
-                )
-                return
-
+            # Узнаём доступные столбцы
             pragma = self._dbReadInterface._cursor.execute("PRAGMA table_info(moz_cookies)")
             columns = [col[1] for col in pragma.fetchall()]
 
+            # Базовые поля (есть всегда)
             select_fields = [
                 'id', 'originAttributes', 'name', 'value', 'host', 'path',
                 'expiry', 'lastAccessed', 'creationTime',
@@ -154,18 +147,23 @@ class CookiesStrategy(StrategyABC):
                 'sameSite', 'schemeMap'
             ]
 
-            if 'isPartitionedAttributeSet' in columns:
+            # Опциональные поля
+            has_partitioned = 'isPartitionedAttributeSet' in columns
+            has_update_time = 'updateTime' in columns
+            has_base_domain = 'baseDomain' in columns
+
+            if has_partitioned:
                 select_fields.append('isPartitionedAttributeSet')
-
-            if 'updateTime' in columns:
+            if has_update_time:
                 select_fields.append('updateTime')
-
-            if 'baseDomain' in columns:
+            if has_base_domain:
                 select_fields.append('baseDomain')
 
+            # Выполняем запрос
             query = f"SELECT {', '.join(select_fields)} FROM moz_cookies"
             cursor = self._dbReadInterface._cursor.execute(query)
 
+            # Читаем пакетами
             while True:
                 batch = cursor.fetchmany(500)
                 if not batch:
@@ -174,10 +172,8 @@ class CookiesStrategy(StrategyABC):
                 result = []
                 for row in batch:
                     row = list(row)
-                    # Дополняем отсутствующие поля
-                    while len(row) < len(select_fields):
-                        row.append(None)
 
+                    # Распаковка обязательных полей
                     (
                         id_val, origin_attrs, name_val, value_val, host_val, path_val,
                         expiry_val, last_accessed_val, creation_time_val,
@@ -185,14 +181,16 @@ class CookiesStrategy(StrategyABC):
                         same_site_val, scheme_map_val, *rest
                     ) = row
 
-                    # Дополнительные поля
-                    is_partitioned = rest[0] if 'isPartitionedAttributeSet' in select_fields else 0
-                    update_time = rest[1] if 'updateTime' in select_fields else 0
-                    base_domain = rest[2] if 'baseDomain' in select_fields else ''
+                    # Опциональные поля
+                    is_partitioned = rest[0] if has_partitioned else 0
+                    update_time = rest[1] if has_update_time else 0
+                    base_domain = rest[2] if has_base_domain else ''
 
+                    # Если baseDomain отсутствует — вычисляем из host
                     if not base_domain and host_val:
                         base_domain = host_val.lstrip('.')
 
+                    # Формируем Cookie в правильном порядке
                     result.append(
                         Cookie(
                             id_val,
@@ -215,16 +213,13 @@ class CookiesStrategy(StrategyABC):
                             self._profile_id
                         )
                     )
-
                 yield result
 
         except sqlite3.Error as e:
-            self._logInterface.Error(type(self), f"Ошибка SQLite: {e}")
-
+            print(f"Ошибка SQLite при чтении cookies: {e}")
 
     def write(self, batch: Iterable[tuple]) -> None:
-        for batch in self.read():
-            self._dbWriteInterface._cursor.executemany(
+            self._dbWriteInterface.ExecCommit(
                 '''INSERT OR REPLACE INTO cookies
                    (id, origin_attributes, name, value, host, path, expiry,
                     last_accessed, creation_time, is_secure, is_http_only,
@@ -233,13 +228,11 @@ class CookiesStrategy(StrategyABC):
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                 batch
             )
-            self._dbWriteInterface.Commit()
             self._logInterface.Info(type(self), f'Группа из {len(batch)} cookies успешно загружена')
 
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
         self.createDataTable()
-
         for batch in self.read():
             executor.submit(self.write, batch)
 
