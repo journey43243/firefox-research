@@ -11,12 +11,10 @@
 """
 
 import asyncio
-import pathlib
 from asyncio import Task
 from collections import namedtuple
 from typing import Iterable
 
-from Common.Routines import SQLiteDatabaseInterface
 from Modules.Firefox.Passwords.PasswordService import PasswordService
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Generator, Metadata
 
@@ -42,8 +40,10 @@ class PasswordStrategy(StrategyABC):
             чтения БД, записи БД, путь профиля и идентификатор профиля.
         """
         self._logInterface = metadata.logInterface
+        self.moduleName = "FirefoxPasswords"
+        self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxPasswords", metadata.logInterface, metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
         self._profile_path = metadata.profilePath
         self._service = PasswordService(self._profile_path, self._logInterface)
@@ -64,8 +64,31 @@ class PasswordStrategy(StrategyABC):
         )
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_url_profile_id ON passwords(url, user)''')
         self._logInterface.Info(type(self), 'Таблица с паролями успешно создана')
-        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
 
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS Headers (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT,
+                Label TEXT,
+                Width INTEGER,
+                DataType TEXT,
+                Comment TEXT
+            )'''
+        )
+
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
+                ('url', 'URL сайта', -1, 'string', 'Адрес сайта, откуда пароль'),
+                ('user', 'Имя пользователя', -1, 'string', 'Логин учётной записи'),
+                ('password', 'Пароль', -1, 'string', 'Пароль учётной записи'),
+                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+            '''
+        )
+
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлекает пароли из Firefox с помощью встроенного в него Dll"
 
     def read(self) -> Generator[list[tuple[str, str, str, int]], None, None]:
         """
@@ -144,3 +167,7 @@ class PasswordStrategy(StrategyABC):
         for batch in self.read():
             task = asyncio.create_task(self.write(batch))
             tasks.append(task)
+        self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
+        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+

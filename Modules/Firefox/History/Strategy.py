@@ -42,9 +42,12 @@ class HistoryStrategy(StrategyABC):
                 параметры профиля и интерфейс логирования.
         """
         self._logInterface = metadata.logInterface
+        self.moduleName = "FirefoxHistory"
+        self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxHistory", metadata.logInterface, metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
+
     def createDataTable(self):
         """
                Создаёт таблицу 'history' для хранения истории посещённых сайтов
@@ -57,8 +60,34 @@ class HistoryStrategy(StrategyABC):
         )
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_history_url on history (url)''')
         self._logInterface.Info(type(self), 'Таблица с историей создана')
-        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
 
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS Headers (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT,
+                Label TEXT,
+                Width INTEGER,
+                DataType TEXT,
+                Comment TEXT
+            )'''
+        )
+
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
+                ('id', 'ID записи', -1, 'int', 'Уникальный идентификатор записи'),
+                ('url', 'URL', -1, 'string', 'Адрес посещённой страницы'),
+                ('title', 'Заголовок', -1, 'string', 'Название страницы'),
+                ('visit_count', 'Количество посещений', -1, 'int', 'Сколько раз страница посещалась'),
+                ('typed', 'Введён вручную', -1, 'int', '1 — введён вручную, 0 — нет'),
+                ('last_visit_date', 'Дата последнего визита', -1, 'string', 'Время последнего посещения'),
+                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+            '''
+        )
+
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлечение истории браузера firefox из places.sqlite"
 
     def read(self) -> Generator[list[History], None, None]:
         """Считывает историю браузера из таблицы `moz_places`.
@@ -120,4 +149,6 @@ class HistoryStrategy(StrategyABC):
         self.createDataTable()
         for batch in self.read():
             self.write(batch)
+        self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

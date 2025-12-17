@@ -59,7 +59,9 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         """
         self._fileReader = FileContentReader()
         self._logInterface = logInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxProfiles", logInterface, caseFolder)
+        self.moduleName = "FirefoxProfiles"
+        self._dbWriteInterface = self._writeInterface(self.moduleName, logInterface, caseFolder)
+        self.timestamp = self._timestamp(caseFolder)
         super().__init__()
         self.createDataTable()
 
@@ -69,10 +71,23 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         и индекс для ускоренного поиска по пути.
         """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
+            '''CREATE TABLE profiles (ID INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
         )
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_profiles_path on profiles (path)''')
         self._logInterface.Info(type(self), 'Таблица с профилями создана.')
+
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE Headers (ID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, Label TEXT, Width INTEGER, DataType TEXT, Comment TEXT)'''
+        )
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES 
+            ('path', 'Путь до профиля', -1, 'string', 'Путь до профиля')'''
+        )
+
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлечение профилей хранящихся в profiles.ini"
 
     @property
     def fileName(self):
@@ -119,4 +134,6 @@ class ProfilesStrategy(StrategyABC, PathMixin):
     def execute(self, threadPool: ThreadPoolExecutor) -> None:
         profiles = [profile for profile in self.read()]
         self.write(profiles)
+        self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

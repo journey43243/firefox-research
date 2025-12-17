@@ -40,8 +40,10 @@ class DownloadsStrategy(StrategyABC):
                 предоставляемый инфраструктурой выполнения стратегий.
         """
         self._logInterface = metadata.logInterface
+        self.moduleName = "FirefoxDownloads"
+        self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxDownloads",metadata.logInterface,metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName,metadata.logInterface,metadata.caseFolder)
         self._profile_id = metadata.profileId
 
     def createDataTable(self):
@@ -55,7 +57,32 @@ class DownloadsStrategy(StrategyABC):
         )
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_downloads_place_id on downloads (place_id)''')
         self._logInterface.Info(type(self), 'Таблица с загрузками создана')
-        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS Headers (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT,
+                Label TEXT,
+                Width INTEGER,
+                DataType TEXT,
+                Comment TEXT
+            )'''
+        )
+
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
+                ('id', 'ID загрузки', -1, 'int', 'Уникальный идентификатор записи'),
+                ('place_id', 'ID места', -1, 'int', 'Идентификатор места загрузки'),
+                ('anno_attribute_id', 'ID атрибута', -1, 'int', 'Дополнительный атрибут записи'),
+                ('content', 'Содержимое', -1, 'string', 'Описание или данные загрузки'),
+                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+            '''
+        )
+
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлечение загрузок из places.sqlite"
 
 
     def read(self) -> Generator[list[Download], None, None]:
@@ -130,4 +157,6 @@ class DownloadsStrategy(StrategyABC):
         self.createDataTable()
         for batch in self.read():
             executor.submit(self.write,batch)
+        self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

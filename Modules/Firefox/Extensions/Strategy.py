@@ -48,8 +48,10 @@ class ExtensionsStrategy(StrategyABC):
                 параметры профиля и интерфейс логирования.
         """
         self._logInterface = metadata.logInterface
+        self.moduleName = "FirefoxExtensions"
+        self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface("FirefoxExtensions", metadata.logInterface, metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
         self._profile_path = metadata.profilePath
 
@@ -80,7 +82,40 @@ class ExtensionsStrategy(StrategyABC):
         self._dbWriteInterface.ExecCommit(
             '''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON extensions (profile_id)''')
         self._logInterface.Info(type(self), 'Таблица с расширениями создана')
-        self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
+
+    def createHeadersTables(self):
+        self._dbWriteInterface.ExecCommit(
+            '''CREATE TABLE IF NOT EXISTS Headers (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT,
+                Label TEXT,
+                Width INTEGER,
+                DataType TEXT,
+                Comment TEXT
+            )'''
+        )
+
+        self._dbWriteInterface.ExecCommit(
+            '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
+                ('id', 'ID расширения', -1, 'string', 'Уникальный идентификатор расширения'),
+                ('name', 'Название', -1, 'string', 'Имя расширения'),
+                ('version', 'Версия', -1, 'string', 'Версия установленного расширения'),
+                ('description', 'Описание', -1, 'string', 'Описание функционала расширения'),
+                ('type', 'Тип', -1, 'string', 'Тип расширения'),
+                ('active', 'Активно', -1, 'int', '1 — активно, 0 — отключено'),
+                ('user_disabled', 'Отключено пользователем', -1, 'int', '1 — пользователь отключил, 0 — нет'),
+                ('install_date', 'Дата установки', -1, 'int', 'Время установки расширения'),
+                ('update_date', 'Дата обновления', -1, 'int', 'Время последнего обновления'),
+                ('path', 'Путь', -1, 'string', 'Путь к файлам расширения'),
+                ('source_url', 'Источник', -1, 'string', 'URL источника расширения'),
+                ('permissions', 'Разрешения', -1, 'string', 'Список разрешений расширения'),
+                ('location', 'Расположение', -1, 'string', 'Где установлено расширение'),
+                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+            '''
+        )
+    @property
+    def help(self) -> str:
+        return f"{self.moduleName}: Извлечение расширений из extensions.json"
 
 
     def read(self) -> Generator[list[Extension], None, None]:
@@ -189,4 +224,6 @@ class ExtensionsStrategy(StrategyABC):
         for batch in self.read():
             if batch:  # Проверяем, что батч не пустой
                 executor.submit(self.write,batch)
+        self.createInfoTable(self.timestamp)
+        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
