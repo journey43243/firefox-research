@@ -12,7 +12,6 @@ from typing import Iterable, Generator
 
 from Modules.Firefox.interfaces.Strategy import StrategyABC, Metadata
 
-
 # Именованный кортеж для удобства маппинга полей (tuple-поведение подходит для executemany)
 Download = namedtuple("Download", "id place_id anno_attribute_id content profile_id")
 
@@ -43,7 +42,7 @@ class DownloadsStrategy(StrategyABC):
         self.moduleName = "FirefoxDownloads"
         self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface(self.moduleName,metadata.logInterface,metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
 
     def createDataTable(self):
@@ -83,7 +82,6 @@ class DownloadsStrategy(StrategyABC):
     @property
     def help(self) -> str:
         return f"{self.moduleName}: Извлечение загрузок из places.sqlite"
-
 
     def read(self) -> Generator[list[Download], None, None]:
         """Читает данные о загрузках из таблиц Firefox партиями.
@@ -153,10 +151,10 @@ class DownloadsStrategy(StrategyABC):
         except Exception as e:
             self._logInterface.Error(type(self), f'Ошибка при записи загрузок: {e}')
 
-    def execute(self, executor: ThreadPoolExecutor) -> None:
+    def execute(self) -> None:
         self.createDataTable()
         for batch in self.read():
-            executor.submit(self.write,batch)
+            self.write(batch)
         self.createInfoTable(self.timestamp)
         self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

@@ -145,7 +145,7 @@ class HistoryStrategy(StrategyABC):
         self._dbWriteInterface.Commit()
         self._logInterface.Info(type(self), 'Группа записей успешно загружена')
 
-    def execute(self, executor: ThreadPoolExecutor) -> None:
+    def execute(self) -> None:
         self.createDataTable()
         for batch in self.read():
             self.write(batch)

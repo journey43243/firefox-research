@@ -113,10 +113,10 @@ class ExtensionsStrategy(StrategyABC):
                 ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
             '''
         )
+
     @property
     def help(self) -> str:
         return f"{self.moduleName}: Извлечение расширений из extensions.json"
-
 
     def read(self) -> Generator[list[Extension], None, None]:
         """Считывает расширения Firefox из файла extensions.json.
@@ -219,11 +219,11 @@ class ExtensionsStrategy(StrategyABC):
                 f'Ошибка записи расширений: {str(e)}'
             )
 
-    def execute(self, executor: ThreadPoolExecutor) -> None:
+    def execute(self) -> None:
         self.createDataTable()
         for batch in self.read():
             if batch:  # Проверяем, что батч не пустой
-                executor.submit(self.write,batch)
+                self.write(batch)
         self.createInfoTable(self.timestamp)
         self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

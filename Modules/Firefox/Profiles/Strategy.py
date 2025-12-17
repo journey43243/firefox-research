@@ -127,11 +127,11 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         """
         for record in butch:
             self._dbWriteInterface.ExecCommit(
-                '''INSERT INTO profiles (path) VALUES (?)''', (record, )
+                '''INSERT INTO profiles (path) VALUES (?)''', (record,)
             )
         self._logInterface.Info(type(self), 'Все профили загружены в таблицу')
 
-    def execute(self, threadPool: ThreadPoolExecutor) -> None:
+    def execute(self) -> None:
         profiles = [profile for profile in self.read()]
         self.write(profiles)
         self.createInfoTable(self.timestamp)

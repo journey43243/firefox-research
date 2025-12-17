@@ -152,7 +152,7 @@ class PasswordStrategy(StrategyABC):
         else:
             self._logInterface.Info(type(self), f'Группа записей успешно загружена')
 
-    def execute(self, tasks: list[Task]) -> None:
+    def execute(self) -> None:
         """
         Запускает процесс извлечения и записи паролей.
 
@@ -165,9 +165,7 @@ class PasswordStrategy(StrategyABC):
         """
         self.createDataTable()
         for batch in self.read():
-            task = asyncio.create_task(self.write(batch))
-            tasks.append(task)
+            self.write(batch)
         self.createInfoTable(self.timestamp)
         self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
-

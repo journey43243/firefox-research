@@ -87,19 +87,17 @@ class Parser:
         profilesStrategy = ProfilesStrategy(self.logInterface, pathlib.Path(self.caseFolder).joinpath(self.caseName))
         profiles = [profile for profile in profilesStrategy.read()]
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            profilesStrategy.execute(executor)
-            for id, profilePath in enumerate(profiles):
+        profilesStrategy.execute()
+        for id, profilePath in enumerate(profiles):
                 dbReadIntreface = SQLiteDatabaseInterface(profilePath + r'\places.sqlite', self.logInterface,
                                                           'Firefox', False)
                 metadata = Metadata(self.logInterface, dbReadIntreface, pathlib.Path(self.caseFolder).joinpath(self.caseName), id + 1, profilePath)
-                HistoryStrategy(metadata).execute(executor)
+                HistoryStrategy(metadata).execute()
                 for strategy in StrategyABC.__subclasses__():
                     if strategy.__name__ in ['HistoryStrategy', 'ProfilesStrategy']:
                         continue
                     else:
-                        strategy(metadata).execute(executor)
+                        strategy(metadata).execute()
                         self.logInterface.Info(type(strategy), 'отработала успешно')
-            executor.shutdown(wait=True)
         pathlib.Path(pathlib.Path(self.caseFolder).joinpath(self.caseName).joinpath(self.outputWriter.GetDBName())).unlink(missing_ok=True)
         return {self.moduleName: self.outputWriter.GetDBName()}

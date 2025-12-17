@@ -28,12 +28,13 @@ class CookiesStrategy(StrategyABC):
     def __init__(self, metadata: Metadata) -> None:
         self._logInterface = metadata.logInterface
         self.moduleName = "FirefoxCookies"
-        self._dbWriteInterface = self._writeInterface(self.moduleName,metadata.logInterface,metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self.timestamp = self._timestamp(metadata.caseFolder)
         self._profile_id = metadata.profileId
         self._profile_path = metadata.profilePath
         self._cookies_db_path = pathlib.Path(metadata.profilePath).joinpath('cookies.sqlite')
-        self._dbReadInterface = SQLiteDatabaseInterface(str(self._cookies_db_path), self._logInterface, metadata.caseFolder, moduleRAMProcessing=False)
+        self._dbReadInterface = SQLiteDatabaseInterface(str(self._cookies_db_path), self._logInterface,
+                                                        metadata.caseFolder, moduleRAMProcessing=False)
 
     def _timestamp_to_datetime(self, timestamp_microseconds: int) -> str:
         """Конвертирует временную метку в строку даты."""
@@ -244,10 +245,9 @@ class CookiesStrategy(StrategyABC):
             print(f"Ошибка SQLite при чтении cookies: {e}")
 
     def write(self, batch: Iterable[Cookie]) -> None:
-        data = [tuple(c) for c in batch]
-
+        data = batch
         self._dbWriteInterface._cursor.executemany(
-            '''INSERT OR REPLACE INTO cookies
+            '''INSERT OR REPLACE INTO Data
                (id, origin_attributes, name, value, host, path, expiry,
                 last_accessed, creation_time, is_secure, is_http_only,
                 in_browser_element, same_site, scheme_map,
@@ -258,11 +258,10 @@ class CookiesStrategy(StrategyABC):
         self._dbWriteInterface.Commit()
         self._logInterface.Info(type(self), f'Группа из {len(data)} cookies успешно загружена')
 
-    def execute(self, executor: ThreadPoolExecutor) -> None:
+    def execute(self) -> None:
         self.createDataTable()
         for batch in self.read():
             self.write(batch)
-
         self.createInfoTable(self.timestamp)
         self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

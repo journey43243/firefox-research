@@ -37,7 +37,6 @@ class StrategyABC(ABC):
     def _writeInterface(self, moduleName: str, logInterface, caseFolder: pathlib.Path) -> SQLiteDatabaseInterface:
         return SQLiteDatabaseInterface(str(caseFolder.joinpath(f"{moduleName}.sqlite")), logInterface, moduleName, True)
 
-
     def _timestamp(self, caseFolder: pathlib.Path) -> str:
         return caseFolder.parts[-1]
 
@@ -84,5 +83,5 @@ class StrategyABC(ABC):
         pass
 
     @abstractmethod
-    def execute(self, threadPool: ThreadPoolExecutor) -> None:
+    def execute(self) -> None:
         pass

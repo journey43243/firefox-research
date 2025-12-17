@@ -56,7 +56,7 @@ class BookmarksStrategy(StrategyABC):
         self.moduleName = "FirefoxBookmarks"
         self.timestamp = self._timestamp(metadata.caseFolder)
         self._dbReadInterface = metadata.dbReadInterface
-        self._dbWriteInterface = self._writeInterface(self.moduleName,metadata.logInterface,metadata.caseFolder)
+        self._dbWriteInterface = self._writeInterface(self.moduleName, metadata.logInterface, metadata.caseFolder)
         self._profile_id = metadata.profileId
 
     def createDataTable(self):
@@ -156,8 +156,8 @@ class BookmarksStrategy(StrategyABC):
         self._dbWriteInterface.Commit()
         self._logInterface.Info(type(self), f'Группа из {len(butch)} закладок успешно загружена')
 
-    def execute(self, executor: ThreadPoolExecutor) -> None:
+    def execute(self) -> None:
         self.createDataTable()
         for batch in self.read():
-            executor.submit(self.write,batch)
+            self.write(batch)
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
