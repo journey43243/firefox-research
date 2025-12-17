@@ -223,18 +223,18 @@ class CookiesStrategy(StrategyABC):
 
 
     def write(self, batch: Iterable[tuple]) -> None:
-
-        self._dbWriteInterface._cursor.executemany(
-            '''INSERT OR REPLACE INTO cookies
-               (id, origin_attributes, name, value, host, path, expiry,
-                last_accessed, creation_time, is_secure, is_http_only,
-                in_browser_element, same_site, scheme_map,
-                is_partitioned_attribute_set, update_time, base_domain, profile_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-            batch
-        )
-        self._dbWriteInterface.Commit()
-        self._logInterface.Info(type(self), f'Группа из {len(batch)} cookies успешно загружена')
+        for batch in self.read():
+            self._dbWriteInterface._cursor.executemany(
+                '''INSERT OR REPLACE INTO cookies
+                   (id, origin_attributes, name, value, host, path, expiry,
+                    last_accessed, creation_time, is_secure, is_http_only,
+                    in_browser_element, same_site, scheme_map,
+                    is_partitioned_attribute_set, update_time, base_domain, profile_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                batch
+            )
+            self._dbWriteInterface.Commit()
+            self._logInterface.Info(type(self), f'Группа из {len(batch)} cookies успешно загружена')
 
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
