@@ -3,10 +3,9 @@
 """
 import pathlib
 import sqlite3
-import os
-from asyncio import Task
+
 from collections import namedtuple
-from concurrent.futures.thread import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable
 from datetime import datetime
 
@@ -19,6 +18,7 @@ Cookie = namedtuple(
     'creation_time is_secure is_http_only in_browser_element same_site '
     'scheme_map is_partitioned_attribute_set update_time base_domain profile_id'
 )
+
 
 class CookiesStrategy(StrategyABC):
     """
@@ -62,7 +62,7 @@ class CookiesStrategy(StrategyABC):
         и индекс по base_domain.
         """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE cookies (
+            '''CREATE TABLE IF NOT EXISTS cookies (
                 id INTEGER,
                 origin_attributes TEXT,
                 name TEXT,
@@ -171,23 +171,48 @@ class CookiesStrategy(StrategyABC):
 
                 result = []
                 for row in batch:
-                    row = list(row)
+                    # Правильная логика распаковки
+                    row_list = list(row)
 
-                    # Распаковка обязательных полей
-                    (
-                        id_val, origin_attrs, name_val, value_val, host_val, path_val,
-                        expiry_val, last_accessed_val, creation_time_val,
-                        is_secure_val, is_http_only_val, in_browser_element_val,
-                        same_site_val, scheme_map_val, *rest
-                    ) = row
+                    # Обязательные поля (первые 14)
+                    id_val = row_list[0]
+                    origin_attrs = row_list[1]
+                    name_val = row_list[2]
+                    value_val = row_list[3]
+                    host_val = row_list[4]
+                    path_val = row_list[5]
+                    expiry_val = row_list[6]
+                    last_accessed_val = row_list[7]
+                    creation_time_val = row_list[8]
+                    is_secure_val = row_list[9]
+                    is_http_only_val = row_list[10]
+                    in_browser_element_val = row_list[11]
+                    same_site_val = row_list[12]
+                    scheme_map_val = row_list[13]
 
-                    # Опциональные поля
-                    is_partitioned = rest[0] if has_partitioned else 0
-                    update_time = rest[1] if has_update_time else 0
-                    base_domain = rest[2] if has_base_domain else ''
+                    # Обработка опциональных полей
+                    is_partitioned = 0
+                    update_time = 0
+                    base_domain = ''
 
-                    # Если baseDomain отсутствует — вычисляем из host
-                    if not base_domain and host_val:
+                    # Счетчик для опциональных полей
+                    idx = 14
+
+                    if has_partitioned:
+                        is_partitioned = row_list[idx] if row_list[idx] is not None else 0
+                        idx += 1
+
+                    if has_update_time:
+                        update_time = row_list[idx] if row_list[idx] is not None else 0
+                        idx += 1
+
+                    if has_base_domain:
+                        base_domain = row_list[idx] if row_list[idx] is not None else ''
+                        # Если baseDomain отсутствует — вычисляем из host
+                        if not base_domain and host_val:
+                            base_domain = host_val.lstrip('.')
+                    elif host_val:
+                        # Если поля base_domain нет в таблице, вычисляем из host
                         base_domain = host_val.lstrip('.')
 
                     # Формируем Cookie в правильном порядке
@@ -218,23 +243,25 @@ class CookiesStrategy(StrategyABC):
         except sqlite3.Error as e:
             print(f"Ошибка SQLite при чтении cookies: {e}")
 
-    def write(self, batch: Iterable[tuple]) -> None:
-            self._dbWriteInterface.ExecCommit(
-                '''INSERT OR REPLACE INTO cookies
-                   (id, origin_attributes, name, value, host, path, expiry,
-                    last_accessed, creation_time, is_secure, is_http_only,
-                    in_browser_element, same_site, scheme_map,
-                    is_partitioned_attribute_set, update_time, base_domain, profile_id)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                batch
-            )
-            self._logInterface.Info(type(self), f'Группа из {len(batch)} cookies успешно загружена')
+    def write(self, batch: Iterable[Cookie]) -> None:
+        data = [tuple(c) for c in batch]  # ← КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ
 
+        self._dbWriteInterface._cursor.executemany(
+            '''INSERT OR REPLACE INTO cookies
+               (id, origin_attributes, name, value, host, path, expiry,
+                last_accessed, creation_time, is_secure, is_http_only,
+                in_browser_element, same_site, scheme_map,
+                is_partitioned_attribute_set, update_time, base_domain, profile_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            data
+        )
+        self._dbWriteInterface.Commit()
+        self._logInterface.Info(type(self), f'Группа из {len(data)} cookies успешно загружена')
 
     def execute(self, executor: ThreadPoolExecutor) -> None:
         self.createDataTable()
         for batch in self.read():
-            executor.submit(self.write, batch)
+            self.write(batch)
 
         self.createInfoTable(self.timestamp)
         self.createHeadersTables()
