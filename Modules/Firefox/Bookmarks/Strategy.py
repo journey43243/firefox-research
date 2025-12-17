@@ -160,6 +160,4 @@ class BookmarksStrategy(StrategyABC):
         self.createDataTable()
         for batch in self.read():
             executor.submit(self.write,batch)
-        self.createInfoTable(self.timestamp)
-        self.createHeadersTables()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()
