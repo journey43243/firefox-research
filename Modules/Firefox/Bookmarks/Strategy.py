@@ -128,4 +128,5 @@ class BookmarksStrategy(StrategyABC):
         self.createDataTable()
         for batch in self.read():
             executor.submit(self.write,batch)
+        print(batch)
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

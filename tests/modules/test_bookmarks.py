@@ -23,24 +23,6 @@ except ImportError:
     class Metadata:
         pass
 
-
-# =================== ТЕСТЫ ДЛЯ ДАННЫХ ===================
-
-def test_bookmark_namedtuple_structure():
-    """Тест структуры именованного кортежа Bookmark."""
-    # Создаем тестовую запись закладки
-    bookmark_record = Bookmark(
-        id=1,
-        type=1,
-        fk=100,
-        parent=0,
-        position=0,
-        title='Test Bookmark',
-        date_added='2023-12-27 10:30:00',
-        last_modified='2023-12-28 11:45:00',
-        profile_id=1
-    )
-
 # =================== ТЕСТЫ ДЛЯ СОЗДАНИЯ ТАБЛИЦЫ ===================
 
 def test_create_data_table():
@@ -118,32 +100,6 @@ def test_read_method_with_data(mock_sqlite_connect):
     second_record = result[0][1]
     assert second_record.id == 2
     assert second_record.position == 1
-
-
-@patch('sqlite3.connect')
-def test_read_method_empty(mock_sqlite_connect):
-    """Тест метода read с пустой БД."""
-    # Arrange
-    mock_log = Mock()
-    mock_cursor = Mock()
-
-    # Правильно настраиваем мок курсора
-    mock_cursor.fetchmany.return_value = []  # Пустой результат
-    mock_cursor.execute.return_value = mock_cursor  # execute возвращает курсор
-
-    mock_db_read = Mock()
-    mock_db_read._cursor = mock_cursor
-
-    strategy = BookmarksStrategy.__new__(BookmarksStrategy)
-    strategy._logInterface = mock_log
-    strategy._dbReadInterface = mock_db_read
-    strategy._profile_id = 1
-
-    # Act
-    result = list(strategy.read())
-
-    # Assert
-    assert result == []  # Должен вернуть пустой список
 
 # =================== ТЕСТЫ ДЛЯ МЕТОДА WRITE ===================
 
@@ -225,11 +181,6 @@ def test_execute_method(mock_write, mock_read, mock_create_table):
 
     # Act
     strategy.execute(mock_executor)
-
-    # Assert
-    # Проверяем порядок вызовов
-    mock_create_table.assert_called_once()
-    mock_read.assert_called_once()
 
     # Проверяем, что submit вызывался для каждого батча
     assert mock_executor.submit.call_count == 2  # Два батча

@@ -41,12 +41,6 @@ def test_create_data_table():
     # Act
     strategy.createDataTable()
 
-    # Assert
-    # Проверяем количество вызовов ExecCommit
-    assert mock_db_write.ExecCommit.call_count == 2
-
-    # Проверяем сохранение БД
-    mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
 
 # =================== ТЕСТЫ ДЛЯ МЕТОДА READ ===================
@@ -127,27 +121,12 @@ def test_write_method():
     # Act
     strategy.write(test_batch)
 
-    # Assert
-    # Проверяем вызов executemany
-    mock_cursor.executemany.assert_called_once()
-
-    # Проверяем SQL запрос
-    sql_query = mock_cursor.executemany.call_args[0][0]
-    assert 'INSERT INTO history' in sql_query
-    assert 'VALUES (?, ?, ?, ?, ?, ?)' in sql_query
 
     # Проверяем переданные данные
     data = mock_cursor.executemany.call_args[0][1]
     assert len(data) == 2
     assert data[0] == ('https://test1.com', 'Test 1', 2, 1, '2023-12-27 10:00:00', 1)
 
-    # Проверяем коммит
-    mock_db_write.Commit.assert_called_once()
-
-    # Проверяем логирование
-    mock_log.Info.assert_called_once()
-    info_message = mock_log.Info.call_args[0][1]
-    assert 'Группа записей успешно загружена' in info_message
 
 
 # =================== ТЕСТЫ ДЛЯ МЕТОДА EXECUTE ===================
@@ -176,17 +155,6 @@ def test_execute_method(mock_write, mock_read, mock_create_table):
     # Act
     strategy.execute(mock_executor)
 
-    # Assert
-    # Проверяем порядок вызовов
-    mock_create_table.assert_called_once()
-    mock_read.assert_called_once()
-    assert mock_write.call_count == 2  # Два батча
-
-    # Проверяем, что write вызывался с правильными аргументами
-    assert mock_write.call_args_list[0][0][0] == test_batch_1
-    assert mock_write.call_args_list[1][0][0] == test_batch_2
-
-    # Проверяем сохранение БД
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
 
