@@ -172,27 +172,26 @@ def test_execute_method(mock_write, mock_read, mock_create_table):
     ]
     mock_read.return_value = [test_batch_1, test_batch_2]
 
-    mock_executor = Mock()
-    mock_executor.submit = Mock()
-
     strategy = BookmarksStrategy.__new__(BookmarksStrategy)
     strategy._logInterface = mock_log
     strategy._dbWriteInterface = mock_db_write
+    strategy.timestamp = "test_timestamp"
 
     # Act
-    strategy.execute(mock_executor)
+    strategy.execute()
 
-    # Проверяем, что submit вызывался для каждого батча
-    assert mock_executor.submit.call_count == 2  # Два батча
+    # Assert
+    # Проверяем, что методы были вызваны в правильном порядке
+    mock_create_table.assert_called_once()
+    mock_read.assert_called_once()
 
-    # Проверяем, что submit вызывался с правильными аргументами
-    submit_call_1 = mock_executor.submit.call_args_list[0]
-    assert submit_call_1[0][0] == strategy.write  # Функция write
-    assert submit_call_1[0][1] == test_batch_1  # Первый батч
+    # Проверяем, что write вызывался для каждого батча
+    assert mock_write.call_count == 2
 
-    submit_call_2 = mock_executor.submit.call_args_list[1]
-    assert submit_call_2[0][0] == strategy.write
-    assert submit_call_2[0][1] == test_batch_2
+    # Проверяем аргументы вызовов write
+    write_calls = mock_write.call_args_list
+    assert write_calls[0][0][0] == test_batch_1  # Первый батч
+    assert write_calls[1][0][0] == test_batch_2  # Второй батч
 
     # Проверяем сохранение БД
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()

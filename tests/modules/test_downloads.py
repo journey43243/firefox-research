@@ -29,7 +29,6 @@ def test_create_data_table():
     mock_log = Mock()
     mock_db_write = Mock()
     mock_db_write.ExecCommit = Mock()
-    mock_db_write.SaveSQLiteDatabaseFromRamToFile = Mock()
 
     # Создаем стратегию с моками
     strategy = DownloadsStrategy.__new__(DownloadsStrategy)
@@ -43,8 +42,6 @@ def test_create_data_table():
     # Проверяем количество вызовов ExecCommit
     assert mock_db_write.ExecCommit.call_count == 2
 
-    # Проверяем сохранение БД
-    mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
 
 # =================== ТЕСТЫ ДЛЯ МЕТОДА READ ===================
@@ -133,7 +130,8 @@ def test_write_method():
 
 @patch.object(DownloadsStrategy, 'createDataTable')
 @patch.object(DownloadsStrategy, 'read')
-def test_execute_method(mock_read, mock_create_table):
+@patch.object(DownloadsStrategy, 'write')
+def test_execute_method(mock_write, mock_read, mock_create_table):
     """Тест метода execute."""
     # Arrange
     mock_log = Mock()
@@ -151,30 +149,26 @@ def test_execute_method(mock_read, mock_create_table):
     ]
     mock_read.return_value = [test_batch_1, test_batch_2]
 
-    mock_executor = Mock()
-    mock_executor.submit = Mock()
-
     strategy = DownloadsStrategy.__new__(DownloadsStrategy)
     strategy._logInterface = mock_log
     strategy._dbWriteInterface = mock_db_write
+    strategy.timestamp = "test_timestamp"
 
     # Act
-    strategy.execute(mock_executor)
+    strategy.execute()
 
+    # Assert
+    # Проверяем, что методы были вызваны
+    mock_create_table.assert_called_once()
+    mock_read.assert_called_once()
 
-    # Проверяем, что submit вызывался для каждого батча
-    assert mock_executor.submit.call_count == 2  # Два батча
+    # Проверяем, что write вызывался для каждого батча (последовательно)
+    assert mock_write.call_count == 2  # <-- Проверяем вызовы write()
 
-    # Проверяем, что submit вызывался с правильными аргументами
-    # Первый вызов: submit(strategy.write, test_batch_1)
-    submit_call_1 = mock_executor.submit.call_args_list[0]
-    assert submit_call_1[0][0] == strategy.write  # Функция write
-    assert submit_call_1[0][1] == test_batch_1  # Первый батч
-
-    # Второй вызов
-    submit_call_2 = mock_executor.submit.call_args_list[1]
-    assert submit_call_2[0][0] == strategy.write
-    assert submit_call_2[0][1] == test_batch_2
+    # Проверяем аргументы вызовов write
+    write_calls = mock_write.call_args_list
+    assert write_calls[0][0][0] == test_batch_1  # Первый батч
+    assert write_calls[1][0][0] == test_batch_2  # Второй батч
 
     # Проверяем сохранение БД
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()

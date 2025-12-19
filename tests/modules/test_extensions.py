@@ -237,14 +237,20 @@ def test_execute_method(mock_write, mock_read, mock_create_table):
     ]
     mock_read.return_value = [test_batch]
 
-    mock_executor = Mock()
-    mock_executor.submit = Mock()
-
     strategy = ExtensionsStrategy.__new__(ExtensionsStrategy)
     strategy._logInterface = mock_log
     strategy._dbWriteInterface = mock_db_write
+    strategy.timestamp = "test_timestamp"
 
-    mock_executor.submit.assert_called_once()
+    strategy.execute()
+
+    # Assert
+    # Проверяем, что методы были вызваны в правильном порядке
+    mock_create_table.assert_called_once()
+    mock_read.assert_called_once()
+    mock_write.assert_called_once_with(test_batch)
+
+    mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
 if __name__ == '__main__':
     pytest.main(['-v', __file__])

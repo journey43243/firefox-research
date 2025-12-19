@@ -146,14 +146,19 @@ def test_execute_method(mock_write, mock_read, mock_create_table):
     test_batch_2 = [History('url2', 'title2', 2, 0, 'date2', 1)]
     mock_read.return_value = [test_batch_1, test_batch_2]
 
-    mock_executor = Mock()
-
     strategy = HistoryStrategy.__new__(HistoryStrategy)
     strategy._logInterface = mock_log
     strategy._dbWriteInterface = mock_db_write
+    strategy.timestamp = "test_timestamp"
 
     # Act
-    strategy.execute(mock_executor)
+    strategy.execute()
+
+    # Assert
+    # Проверяем вызовы методов
+    mock_create_table.assert_called_once()
+    mock_read.assert_called_once()
+    assert mock_write.call_count == 2  # Два батча
 
     mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 

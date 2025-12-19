@@ -124,15 +124,20 @@ def test_execute_method():
     strategy = ProfilesStrategy.__new__(ProfilesStrategy)
     strategy._logInterface = mock_log
     strategy._dbWriteInterface = mock_db_write
+    strategy.timestamp = "test_timestamp"
 
     # Патчим методы
     with patch.object(ProfilesStrategy, 'read') as mock_read, \
             patch.object(ProfilesStrategy, 'write') as mock_write:
         mock_read.return_value = test_profiles
-        mock_executor = Mock()
 
         # Act
-        strategy.execute(mock_executor)
+        strategy.execute()
+
+        # Assert
+        # Проверяем вызовы методов
+        mock_read.assert_called_once()
+        mock_write.assert_called_once_with(test_profiles)
 
         mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 

@@ -136,7 +136,6 @@ def test_write_method():
 
 
 # =================== ТЕСТЫ ДЛЯ МЕТОДА EXECUTE ===================
-
 @pytest.mark.asyncio
 async def test_execute_method():
     """Асинхронный тест метода execute."""
@@ -150,31 +149,35 @@ async def test_execute_method():
     strategy._logInterface = mock_log
     strategy._dbWriteInterface = mock_db_write
     strategy._profile_id = 1
+    strategy.timestamp = "test_timestamp"
 
     # Патчим методы
     with patch.object(PasswordStrategy, 'createDataTable') as mock_create_table, \
             patch.object(PasswordStrategy, 'read') as mock_read, \
-            patch.object(PasswordStrategy, 'write', new_callable=AsyncMock) as mock_write:
+            patch.object(PasswordStrategy, 'write') as mock_write:
         # Настраиваем read для возврата батчей
         test_batch_1 = [('url1', 'user1', 'pass1', 1)]
         test_batch_2 = [('url2', 'user2', 'pass2', 1)]
         mock_read.return_value = [test_batch_1, test_batch_2]
 
-        # Список задач
-        tasks = []
-
         # Act
-        strategy.execute(tasks)
+        strategy.execute()
 
-        # Даем время на выполнение асинхронных задач
-        await asyncio.sleep(0.01)
+        # Assert
+        # Проверяем, что методы были вызваны
+        mock_create_table.assert_called_once()
+        mock_read.assert_called_once()
 
-        # Проверяем, что задачи были созданы
-        assert len(tasks) == 2
-        assert all(isinstance(task, asyncio.Task) for task in tasks)
+        # Проверяем, что write вызывался для каждого батча
+        assert mock_write.call_count == 2  # <-- Два батча
+
+        # Проверяем аргументы вызовов write
+        write_calls = mock_write.call_args_list
+        assert write_calls[0][0][0] == test_batch_1
+        assert write_calls[1][0][0] == test_batch_2
 
         # Проверяем сохранение БД
-        mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_not_called()
+        mock_db_write.SaveSQLiteDatabaseFromRamToFile.assert_called_once()
 
 if __name__ == '__main__':
     pytest.main(['-v', __file__])
