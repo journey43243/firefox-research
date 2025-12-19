@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['firefox_0',['Firefox',['../namespace_firefox.html',1,'']]],
+  ['firefox_3a_3abookmarks_1',['Bookmarks',['../namespace_firefox_1_1_bookmarks.html',1,'Firefox']]],
+  ['firefox_3a_3abookmarks_3a_3astrategy_2',['Strategy',['../namespace_firefox_1_1_bookmarks_1_1_strategy.html',1,'Firefox::Bookmarks']]],
+  ['firefox_3a_3adownloads_3',['Downloads',['../namespace_firefox_1_1_downloads.html',1,'Firefox']]],
+  ['firefox_3a_3adownloads_3a_3astrategy_4',['Strategy',['../namespace_firefox_1_1_downloads_1_1_strategy.html',1,'Firefox::Downloads']]],
+  ['firefox_3a_3aextensions_5',['Extensions',['../namespace_firefox_1_1_extensions.html',1,'Firefox']]],
+  ['firefox_3a_3aextensions_3a_3astrategy_6',['Strategy',['../namespace_firefox_1_1_extensions_1_1_strategy.html',1,'Firefox::Extensions']]],
+  ['firefox_3a_3ahistory_7',['History',['../namespace_firefox_1_1_history.html',1,'Firefox']]],
+  ['firefox_3a_3ahistory_3a_3astrategy_8',['Strategy',['../namespace_firefox_1_1_history_1_1_strategy.html',1,'Firefox::History']]],
+  ['firefox_3a_3ainterfaces_9',['interfaces',['../namespace_firefox_1_1interfaces.html',1,'Firefox']]],
+  ['firefox_3a_3ainterfaces_3a_3astrategy_10',['Strategy',['../namespace_firefox_1_1interfaces_1_1_strategy.html',1,'Firefox::interfaces']]],
+  ['firefox_3a_3aparser_11',['Parser',['../namespace_firefox_1_1_parser.html',1,'Firefox']]],
+  ['firefox_3a_3apasswords_12',['Passwords',['../namespace_firefox_1_1_passwords.html',1,'Firefox']]],
+  ['firefox_3a_3apasswords_3a_3apasswordservice_13',['PasswordService',['../namespace_firefox_1_1_passwords_1_1_password_service.html',1,'Firefox::Passwords']]],
+  ['firefox_3a_3apasswords_3a_3astrategy_14',['Strategy',['../namespace_firefox_1_1_passwords_1_1_strategy.html',1,'Firefox::Passwords']]],
+  ['firefox_3a_3aprofiles_15',['Profiles',['../namespace_firefox_1_1_profiles.html',1,'Firefox']]],
+  ['firefox_3a_3aprofiles_3a_3astrategy_16',['Strategy',['../namespace_firefox_1_1_profiles_1_1_strategy.html',1,'Firefox::Profiles']]]
+];
