@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ru">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Firefox Research: Исследовательский набор для анализа данных Firefox</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">Firefox Research<span id="projectnumber">&#160;1.0</span>
+   </div>
+   <div id="projectbrief">Модульная система извлечения данных Firefox</div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Создано системой Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Поиск',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('index.html','',''); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">Загрузка...</div>
+<div class="SRStatus" id="Searching">Поиск...</div>
+<div class="SRStatus" id="NoMatches">Не найдено</div>
+</div>
+</div>
+</div>
+</div>
+
+<div><div class="header">
+  <div class="headertitle"><div class="title">Исследовательский набор для анализа данных <a class="el" href="namespace_firefox.html">Firefox</a> </div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="intro"></a>
+О проекте</h1>
+<p>Проект "firefox-research" — это набор модулей и утилит для извлечения, нормализации и сохранения артефактов браузера Mozilla <a class="el" href="namespace_firefox.html">Firefox</a> из пользовательских профилей. Цель проекта — предоставить удобную, воспроизводимую и расширяемую инфраструктуру для сбора данных (история, закладки, загрузки, расширения, пароли, профили и т.д.) и сохранения их в результирующие SQLite-базы для последующего анализа.</p>
+<h1 class="doxsection"><a class="anchor" id="quickstart"></a>
+Быстрый старт</h1>
+<ul>
+<li>Установите зависимости: <span class="tt">pip install -r requirements.txt</span></li>
+<li>Создайте папки <span class="tt">Cases</span> и <span class="tt">Logs</span> в корне проекта (если ещё нет).</li>
+<li>Запустите анализ кейса: <span class="tt">python Run.py</span>.</li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="architecture"></a>
+Архитектура и особенности</h1>
+<p>Проект построен вокруг набора независимых стратегий (Strategy), каждая из которых отвечает за чтение конкретной части данных <a class="el" href="namespace_firefox.html">Firefox</a> и запись результатов в отдельную результирующую SQLite-базу. Общие интерфейсы и механизмы:</p><ul>
+<li><span class="tt"><a class="el" href="_parser_8py.html">Modules/Firefox/Parser.py</a></span> — точка входа для модуля <a class="el" href="namespace_firefox.html">Firefox</a>; координирует инициализацию стратегий и параллельное выполнение.</li>
+<li><span class="tt"><a class="el" href="interfaces_2_strategy_8py.html">Modules/Firefox/interfaces/Strategy.py</a></span> — абстрактные классы <span class="tt">StrategyABC</span> и <span class="tt">Metadata</span>, единый контракт для всех стратегий (read/write/execute).</li>
+<li>Для каждой логической области данных создаётся отдельная стратегия и файл с реализацией (Profiles, History, Bookmarks, Downloads, Cookies, Extensions, Passwords).</li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="modules"></a>
+Модули <span class="tt">Modules/Firefox</span></h1>
+<p>Ниже — краткое описание основных модулей, находящихся в <span class="tt">Modules/Firefox</span>.</p>
+<ul>
+<li>Parser<ul>
+<li>Файл: <a class="el" href="_parser_8py.html">Modules/Firefox/Parser.py</a></li>
+<li>Описание: Оркестратор выполнения стратегий. Находит профили <a class="el" href="namespace_firefox.html">Firefox</a>, создаёт объекты <span class="tt">Metadata</span> и запускает стратегии (History, Passwords, Bookmarks, Downloads, Extensions и т.д.) в пуле потоков.</li>
+</ul>
+</li>
+<li>Profiles<ul>
+<li>Файл: <a class="el" href="_profiles_2_strategy_8py.html">Modules/Firefox/Profiles/Strategy.py</a></li>
+<li>Описание: Читает <span class="tt">profiles.ini</span>, извлекает абсолютные пути профилей и сохраняет их в результирующую базу. Эти пути служат источником для всех дальнейших стратегий.</li>
+</ul>
+</li>
+<li>History<ul>
+<li>Файл: <a class="el" href="_history_2_strategy_8py.html">Modules/Firefox/History/Strategy.py</a></li>
+<li>Описание: Извлекает записи из <span class="tt">moz_places</span>, преобразует метки времени и сохраняет историю посещений в отдельную таблицу <span class="tt">history</span>.</li>
+</ul>
+</li>
+<li>Bookmarks<ul>
+<li>Файл: <a class="el" href="_bookmarks_2_strategy_8py.html">Modules/Firefox/Bookmarks/Strategy.py</a></li>
+<li>Описание: Считывает закладки (moz_bookmarks + moz_places), формирует структуру записей и сохраняет их в результирующую таблицу <span class="tt">bookmarks</span>.</li>
+</ul>
+</li>
+<li>Passwords<ul>
+<li>Файл: <a class="el" href="_password_service_8py.html">Modules/Firefox/Passwords/PasswordService.py</a></li>
+<li>Описание: Работа с NSS (nss3) — инициализация профиля, проверка мастер-пароля и дешифрование сохранённых логинов (logins.json / signons.sqlite). Возвращает расшифрованные пары (url, user, password).</li>
+</ul>
+</li>
+<li>Downloads<ul>
+<li>Файл: <a class="el" href="_downloads_2_strategy_8py.html">Modules/Firefox/Downloads/Strategy.py</a></li>
+<li>Описание: (стратегия для извлечения записей загрузок из аннотаций/places).</li>
+</ul>
+</li>
+<li>Cookies<ul>
+<li>Файл: <a class="el" href="_cookies_2_strategy_8py.html">Modules/Firefox/Cookies/Strategy.py</a></li>
+<li>Описание: (стратегия для извлечения и сохранения cookies <a class="el" href="namespace_firefox.html">Firefox</a>).</li>
+</ul>
+</li>
+<li>Extensions<ul>
+<li>Файл: <a class="el" href="_extensions_2_strategy_8py.html">Modules/Firefox/Extensions/Strategy.py</a></li>
+<li>Описание: Обрабатывает <span class="tt">extensions.json</span> профиля — извлекает список установленных дополнений, их метаданные и состояние.</li>
+</ul>
+</li>
+<li>interfaces<ul>
+<li>Путь: <a class="el" href="interfaces_2_strategy_8py.html">Modules/Firefox/interfaces/Strategy.py</a></li>
+<li>Описание: Общая инфраструктура (контракт StrategyABC, Metadata), вспомогательные методы для создания интерфейса записи SQLite и формирования метаданных.</li>
+</ul>
+</li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="output"></a>
+Результаты работы</h1>
+<p>Для каждой стратегии создаётся отдельная результирующая база SQLite в каталоге кейса. Каждая база содержит:</p><ul>
+<li>основную таблицу с извлечёнными артефактами;</li>
+<li><span class="tt">Info</span> — служебная таблица с метаданными (имя модуля, время выполнения, производитель);</li>
+<li><span class="tt">Headers</span> — описание колонок для визуализации/экспорта.</li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="notes"></a>
+Замечания и рекомендации</h1>
+<ul>
+<li>Модуль <span class="tt">Passwords</span> использует нативную библиотеку NSS; на целевой платформе должна быть доступна <span class="tt">nss3</span> (nss3.dll на Windows). При развертывании убедитесь, что путь до библиотеки корректен или библиотека установлена в системе.</li>
+<li>Для корректной работы Парсера требуется доступ к файлам профиля <a class="el" href="namespace_firefox.html">Firefox</a> (папки профилей в APPDATA%\Mozilla\Firefox).</li>
+<li>Логирование и результаты записываются в папки <span class="tt">Logs</span> и <span class="tt">Cases</span>. </li>
+</ul>
+</div></div><!-- PageDoc -->
+<a href="doxygen_crawl.html"></a>
+</div><!-- contents -->
+</div><!-- doc-content -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Создано системой <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>

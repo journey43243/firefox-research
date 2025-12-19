@@ -1,0 +1,514 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ru">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.15.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Firefox Research: Класс Firefox.interfaces.Strategy.StrategyABC</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="clipboard.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">Firefox Research<span id="projectnumber">&#160;1.0</span>
+   </div>
+   <div id="projectbrief">Модульная система извлечения данных Firefox</div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Создано системой Doxygen 1.15.0 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+</script>
+<script type="text/javascript">
+$(function() { codefold.init(); });
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+$(function() {
+  initMenu('',true,false,'search.php','Поиск',true);
+  $(function() { init_search(); });
+});
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(function(){initNavTree('class_firefox_1_1interfaces_1_1_strategy_1_1_strategy_a_b_c.html','','class_firefox_1_1interfaces_1_1_strategy_1_1_strategy_a_b_c-members'); });
+</script>
+<div id="container">
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">Загрузка...</div>
+<div class="SRStatus" id="Searching">Поиск...</div>
+<div class="SRStatus" id="NoMatches">Не найдено</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="header">
+  <div class="headertitle"><div class="title">Класс Firefox.interfaces.Strategy.StrategyABC</div></div>
+</div><!--header-->
+<div class="contents">
+
+<p>Абстрактный базовый класс стратегий обработки данных <a class="el" href="namespace_firefox.html">Firefox</a>.  
+ <a href="#details">Подробнее...</a></p>
+<div class="dynheader">
+Граф наследования:Firefox.interfaces.Strategy.StrategyABC:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="class_firefox_1_1interfaces_1_1_strategy_1_1_strategy_a_b_c.png" alt=""/>
+ </div></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Открытые члены</h2></td></tr>
+<tr class="memitem:a2c23ab46ad320451c8f3bc8829a3c955" id="r_a2c23ab46ad320451c8f3bc8829a3c955"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2c23ab46ad320451c8f3bc8829a3c955">createDataTable</a> (self)</td></tr>
+<tr class="memdesc:a2c23ab46ad320451c8f3bc8829a3c955"><td class="mdescLeft">&#160;</td><td class="mdescRight">Создаёт основную таблицу данных стратегии.  <br /></td></tr>
+<tr class="memitem:af992495b8c786c70f0a91752e7eccbe1" id="r_af992495b8c786c70f0a91752e7eccbe1"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af992495b8c786c70f0a91752e7eccbe1">createInfoTable</a> (self, str timestamp)</td></tr>
+<tr class="memdesc:af992495b8c786c70f0a91752e7eccbe1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Создаёт и заполняет служебную таблицу Info.  <br /></td></tr>
+<tr class="memitem:a10511800435f6f6d34f894040d0ce563" id="r_a10511800435f6f6d34f894040d0ce563"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a10511800435f6f6d34f894040d0ce563">createHeadersTables</a> (self)</td></tr>
+<tr class="memdesc:a10511800435f6f6d34f894040d0ce563"><td class="mdescLeft">&#160;</td><td class="mdescRight">Создаёт таблицы заголовков Headers.  <br /></td></tr>
+<tr class="memitem:a79f86bf6074ac9dc1a70bf937accfcff" id="r_a79f86bf6074ac9dc1a70bf937accfcff"><td class="memItemLeft" align="right" valign="top">Generator[list|str, None, None]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a79f86bf6074ac9dc1a70bf937accfcff">read</a> (self)</td></tr>
+<tr class="memdesc:a79f86bf6074ac9dc1a70bf937accfcff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Извлекает данные из источника.  <br /></td></tr>
+<tr class="memitem:a6bcd97ba0e070cf7d69b9d548a47d50e" id="r_a6bcd97ba0e070cf7d69b9d548a47d50e"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6bcd97ba0e070cf7d69b9d548a47d50e">write</a> (self, Iterable butch)</td></tr>
+<tr class="memdesc:a6bcd97ba0e070cf7d69b9d548a47d50e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Записывает батч данных в результирующую базу.  <br /></td></tr>
+<tr class="memitem:accac04be9bfe6cd06d459e33d780d9f7" id="r_accac04be9bfe6cd06d459e33d780d9f7"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#accac04be9bfe6cd06d459e33d780d9f7">execute</a> (self, ThreadPoolExecutor threadPool)</td></tr>
+<tr class="memdesc:accac04be9bfe6cd06d459e33d780d9f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Запускает полный цикл выполнения стратегии.  <br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-static-attribs" class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+Статические открытые данные</h2></td></tr>
+<tr class="memitem:a5f4353fe4f83483341047e53bdc0d8b0" id="r_a5f4353fe4f83483341047e53bdc0d8b0"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5f4353fe4f83483341047e53bdc0d8b0">vendor</a> = &quot;LabFramework&quot;</td></tr>
+<tr class="memitem:ab257b80c5730bd0f688538badb913333" id="r_ab257b80c5730bd0f688538badb913333"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab257b80c5730bd0f688538badb913333">moduleName</a> = None</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Защищенные члены</h2></td></tr>
+<tr class="memitem:ade6dc2ff9e8cd87107331175ccf286d4" id="r_ade6dc2ff9e8cd87107331175ccf286d4"><td class="memItemLeft" align="right" valign="top">SQLiteDatabaseInterface&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ade6dc2ff9e8cd87107331175ccf286d4">_writeInterface</a> (self, str <a class="el" href="#ab257b80c5730bd0f688538badb913333">moduleName</a>, logInterface, pathlib.Path caseFolder)</td></tr>
+<tr class="memdesc:ade6dc2ff9e8cd87107331175ccf286d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Создаёт интерфейс записи данных в SQLite базу.  <br /></td></tr>
+<tr class="memitem:ae700f114f9919ed358ce6fefdbc15669" id="r_ae700f114f9919ed358ce6fefdbc15669"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae700f114f9919ed358ce6fefdbc15669">_timestamp</a> (self, pathlib.Path caseFolder)</td></tr>
+<tr class="memdesc:ae700f114f9919ed358ce6fefdbc15669"><td class="mdescLeft">&#160;</td><td class="mdescRight">Извлекает временную метку из имени каталога кейса.  <br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pro-static-attribs" class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
+Статические защищенные данные</h2></td></tr>
+<tr class="memitem:ae08427f44e60102149d7c380706a0140" id="r_ae08427f44e60102149d7c380706a0140"><td class="memItemLeft" align="right" valign="top">SQLiteDatabaseInterface&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae08427f44e60102149d7c380706a0140">_dbWriteInterface</a> = None</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-properties" class="groupheader"><a id="properties" name="properties"></a>
+Свойства</h2></td></tr>
+<tr class="memitem:a900e3fa187791881a6c937f95f4d33ba" id="r_a900e3fa187791881a6c937f95f4d33ba"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a900e3fa187791881a6c937f95f4d33ba">help</a> = property</td></tr>
+<tr class="memdesc:a900e3fa187791881a6c937f95f4d33ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Возвращает краткое описание стратегии.  <br /></td></tr>
+</table>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Подробное описание</h2>
+<div class="textblock"><p>Абстрактный базовый класс стратегий обработки данных <a class="el" href="namespace_firefox.html">Firefox</a>. </p>
+<p>Класс <a class="el" href="class_firefox_1_1interfaces_1_1_strategy_1_1_strategy_a_b_c.html" title="Абстрактный базовый класс стратегий обработки данных Firefox.">StrategyABC</a> определяет единый интерфейс для всех стратегий, предназначенных для извлечения и сохранения данных браузера <a class="el" href="namespace_firefox.html">Firefox</a>.</p>
+<p>Каждая конкретная стратегия обязана реализовать следующие методы:</p><ul>
+<li><a class="el" href="#a79f86bf6074ac9dc1a70bf937accfcff" title="Извлекает данные из источника.">read()</a> — извлечение данных из источника;</li>
+<li><a class="el" href="#a6bcd97ba0e070cf7d69b9d548a47d50e" title="Записывает батч данных в результирующую базу.">write()</a> — запись данных в результирующую базу данных;</li>
+<li><a class="el" href="#accac04be9bfe6cd06d459e33d780d9f7" title="Запускает полный цикл выполнения стратегии.">execute()</a> — полный цикл выполнения стратегии.</li>
+</ul>
+<p>Базовый класс также предоставляет вспомогательные методы для инициализации SQLite базы данных, формирования служебных таблиц и получения временных меток. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Методы</h2>
+<a id="ae700f114f9919ed358ce6fefdbc15669" name="ae700f114f9919ed358ce6fefdbc15669"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae700f114f9919ed358ce6fefdbc15669">&#9670;&#160;</a></span>_timestamp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> str Firefox.interfaces.Strategy.StrategyABC._timestamp </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">pathlib.Path</td>          <td class="paramname"><span class="paramname"><em>caseFolder</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Извлекает временную метку из имени каталога кейса. </p>
+<p>Предполагается, что имя каталога кейса содержит временную метку выполнения (например, дату и время). </p><dl class="params"><dt>Аргументы</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">caseFolder</td><td>Путь к каталогу кейса. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Возвращает</dt><dd>Строковое представление временной метки. </dd></dl>
+
+</div>
+</div>
+<a id="ade6dc2ff9e8cd87107331175ccf286d4" name="ade6dc2ff9e8cd87107331175ccf286d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade6dc2ff9e8cd87107331175ccf286d4">&#9670;&#160;</a></span>_writeInterface()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> SQLiteDatabaseInterface Firefox.interfaces.Strategy.StrategyABC._writeInterface </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>moduleName</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>logInterface</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">pathlib.Path
+    </td>          <td class="paramname"><span class="paramname"><em>caseFolder</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Создаёт интерфейс записи данных в SQLite базу. </p>
+<dl class="params"><dt>Аргументы</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">moduleName</td><td>Имя модуля стратегии, используемое для формирования имени файла базы данных. </td></tr>
+    <tr><td class="paramname">logInterface</td><td>Интерфейс логирования. </td></tr>
+    <tr><td class="paramname">caseFolder</td><td>Путь к каталогу текущего кейса. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Возвращает</dt><dd>Экземпляр SQLiteDatabaseInterface, настроенный для записи данных стратегии. </dd></dl>
+
+</div>
+</div>
+<a id="a2c23ab46ad320451c8f3bc8829a3c955" name="a2c23ab46ad320451c8f3bc8829a3c955"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c23ab46ad320451c8f3bc8829a3c955">&#9670;&#160;</a></span>createDataTable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Firefox.interfaces.Strategy.StrategyABC.createDataTable </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Создаёт основную таблицу данных стратегии. </p>
+<p>Каждая стратегия должна определить структуру таблицы, предназначенной для хранения извлекаемых данных. </p>
+
+</div>
+</div>
+<a id="a10511800435f6f6d34f894040d0ce563" name="a10511800435f6f6d34f894040d0ce563"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10511800435f6f6d34f894040d0ce563">&#9670;&#160;</a></span>createHeadersTables()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Firefox.interfaces.Strategy.StrategyABC.createHeadersTables </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Создаёт таблицы заголовков Headers. </p>
+<p>Таблицы Headers используются для описания структуры результирующих таблиц и применяются при визуализации и экспорте данных во внешние интерфейсы. </p>
+
+</div>
+</div>
+<a id="af992495b8c786c70f0a91752e7eccbe1" name="af992495b8c786c70f0a91752e7eccbe1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af992495b8c786c70f0a91752e7eccbe1">&#9670;&#160;</a></span>createInfoTable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None Firefox.interfaces.Strategy.StrategyABC.createInfoTable </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str</td>          <td class="paramname"><span class="paramname"><em>timestamp</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Создаёт и заполняет служебную таблицу Info. </p>
+<p>Описание Таблица Info содержит общие метаданные стратегии:</p><ul>
+<li>имя модуля;</li>
+<li>временную метку выполнения;</li>
+<li>производителя.</li>
+</ul>
+<p>Аргументы timestamp Временная метка текущего кейса. </p>
+
+</div>
+</div>
+<a id="accac04be9bfe6cd06d459e33d780d9f7" name="accac04be9bfe6cd06d459e33d780d9f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accac04be9bfe6cd06d459e33d780d9f7">&#9670;&#160;</a></span>execute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None Firefox.interfaces.Strategy.StrategyABC.execute </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ThreadPoolExecutor</td>          <td class="paramname"><span class="paramname"><em>threadPool</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Запускает полный цикл выполнения стратегии. </p>
+<p>Как правило, метод:</p><ol type="1">
+<li>Создаёт необходимые таблицы;</li>
+<li>Инициирует чтение данных;</li>
+<li>Передаёт батчи на запись;</li>
+<li>Формирует служебные таблицы;</li>
+<li>Сохраняет результирующую базу данных на диск.</li>
+</ol>
+<dl class="params"><dt>Аргументы</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">threadPool</td><td>Пул потоков для асинхронного выполнения задач. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a79f86bf6074ac9dc1a70bf937accfcff" name="a79f86bf6074ac9dc1a70bf937accfcff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79f86bf6074ac9dc1a70bf937accfcff">&#9670;&#160;</a></span>read()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> Generator[list | str, None, None] Firefox.interfaces.Strategy.StrategyABC.read </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Извлекает данные из источника. </p>
+<p>Метод должен возвращать данные пакетами (батчами), что позволяет эффективно обрабатывать большие объёмы информации.</p>
+<dl class="section return"><dt>Возвращает</dt><dd>Генератор, возвращающий:<ul>
+<li>список структурированных данных;</li>
+<li>либо строку состояния (опционально). </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a id="a6bcd97ba0e070cf7d69b9d548a47d50e" name="a6bcd97ba0e070cf7d69b9d548a47d50e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bcd97ba0e070cf7d69b9d548a47d50e">&#9670;&#160;</a></span>write()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None Firefox.interfaces.Strategy.StrategyABC.write </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>self</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Iterable</td>          <td class="paramname"><span class="paramname"><em>butch</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Записывает батч данных в результирующую базу. </p>
+<dl class="params"><dt>Аргументы</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">butch</td><td>Итератор объектов или кортежей данных, подготовленных к записи. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Данные класса</h2>
+<a id="ae08427f44e60102149d7c380706a0140" name="ae08427f44e60102149d7c380706a0140"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae08427f44e60102149d7c380706a0140">&#9670;&#160;</a></span>_dbWriteInterface</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">SQLiteDatabaseInterface Firefox.interfaces.Strategy.StrategyABC._dbWriteInterface = None</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab257b80c5730bd0f688538badb913333" name="ab257b80c5730bd0f688538badb913333"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab257b80c5730bd0f688538badb913333">&#9670;&#160;</a></span>moduleName</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">str Firefox.interfaces.Strategy.StrategyABC.moduleName = None</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5f4353fe4f83483341047e53bdc0d8b0" name="a5f4353fe4f83483341047e53bdc0d8b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f4353fe4f83483341047e53bdc0d8b0">&#9670;&#160;</a></span>vendor</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">str Firefox.interfaces.Strategy.StrategyABC.vendor = &quot;LabFramework&quot;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a name="doc-property-members" id="doc-property-members"></a><h2 id="header-doc-property-members" class="groupheader">Полный список свойств</h2>
+<a id="a900e3fa187791881a6c937f95f4d33ba" name="a900e3fa187791881a6c937f95f4d33ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a900e3fa187791881a6c937f95f4d33ba">&#9670;&#160;</a></span>help</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Firefox.interfaces.Strategy.StrategyABC.help = property</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Возвращает краткое описание стратегии. </p>
+<p>Значение используется при формировании служебной таблицы Info и отображении справочной информации о модуле.</p>
+<dl class="section return"><dt>Возвращает</dt><dd>Человекочитаемая строка справки. </dd></dl>
+
+</div>
+</div>
+<hr/>Объявления и описания членов класса находятся в файле:<ul>
+<li>C:/firefox-research/Modules/Firefox/interfaces/<a class="el" href="interfaces_2_strategy_8py.html">Strategy.py</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
+</div><!-- container -->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a href="namespace_firefox.html">Firefox</a></li><li class="navelem"><a href="namespace_firefox_1_1interfaces.html">interfaces</a></li><li class="navelem"><a href="namespace_firefox_1_1interfaces_1_1_strategy.html">Strategy</a></li><li class="navelem"><a href="class_firefox_1_1interfaces_1_1_strategy_1_1_strategy_a_b_c.html">StrategyABC</a></li>
+    <li class="footer">Создано системой <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.15.0 </li>
+  </ul>
+</div>
+</body>
+</html>
