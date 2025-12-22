@@ -54,7 +54,7 @@ class PasswordStrategy(StrategyABC):
                и индексы по URL и пользователю.
                """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE IF NOT EXISTS passwords (
+            '''CREATE TABLE IF NOT EXISTS Data (
                 url TEXT,
                 user TEXT,
                 password TEXT,
@@ -135,19 +135,15 @@ class PasswordStrategy(StrategyABC):
         batch : Iterable[tuple]
             Список кортежей для записи.
         """
-        cursor = self._dbWriteInterface._cursor
-        conn = self._dbWriteInterface._connection
         try:
-            conn.execute("BEGIN")
-            cursor.executemany(
-                '''INSERT OR IGNORE INTO passwords 
-                   (url, user, password, profile_id) 
-                   VALUES (?, ?, ?, ?)''',
-                batch
-            )
-            conn.commit()
+            for row in batch:
+                self._dbWriteInterface.ExecCommit(
+                    '''INSERT OR IGNORE INTO Data
+                       (url, user, password, profile_id) 
+                       VALUES (?, ?, ?, ?)''',
+                    row
+                )
         except Exception as e:
-            conn.rollback()
             self._logInterface.Error(type(self), f"Ошибка записи батча: {e}")
         else:
             self._logInterface.Info(type(self), f'Группа записей успешно загружена')

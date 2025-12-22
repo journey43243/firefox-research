@@ -60,11 +60,9 @@ class BookmarksStrategy(StrategyABC):
         self._profile_id = metadata.profileId
 
     def createDataTable(self):
-        """
-        Создаёт таблицу 'bookmarks' для хранения закладок Firefox.
-        """
+
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE bookmarks (id INTEGER, type INTEGER, place INTEGER,
+            '''CREATE TABLE Data (id INTEGER, type INTEGER, place INTEGER,
             parent INTEGER, position INTEGER, title TEXT,
             date_added text, last_modified text, profile_id INTEGER,
             PRIMARY KEY (id, profile_id))'''
@@ -116,17 +114,21 @@ class BookmarksStrategy(StrategyABC):
         выводится предупреждение и чтение прекращается.
         """
         try:
-            cursor = self._dbReadInterface._cursor.execute(
+            if not self._dbReadInterface.IsConnected():
+                return
+            cursor = self._dbReadInterface.Fetch(
                 '''SELECT id, type, fk, parent, position, title, 
                           datetime(dateAdded / 1000000, 'unixepoch') as date_added,
                           datetime(lastModified / 1000000, 'unixepoch') as last_modified
                    FROM moz_bookmarks 
-                   WHERE type = 1'''
+                   WHERE type = 1''', commit_required=False
             )
-            while True:
-                batch = cursor.fetchmany(500)
+            i = 0
+            while i < len(cursor):
+                batch = cursor[i: i + 500]
                 if not batch:
                     break
+                i += 500
                 yield [Bookmark(*row, profile_id=self._profile_id) for row in batch]
         except sqlite3.OperationalError as e:
             self._logInterface.Warn(
@@ -147,17 +149,19 @@ class BookmarksStrategy(StrategyABC):
         -----
         После записи вызывается Commit(), а также выводится информационное сообщение.
         """
-        self._dbWriteInterface._cursor.executemany(
-            '''INSERT OR REPLACE INTO bookmarks 
-               (id, type, place, parent, position, title, date_added, last_modified, profile_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-            butch
-        )
-        self._dbWriteInterface.Commit()
+        for row in butch:
+            self._dbWriteInterface.ExecCommit(
+                '''INSERT OR REPLACE INTO Data 
+                   (id, type, place, parent, position, title, date_added, last_modified, profile_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                row
+            )
         self._logInterface.Info(type(self), f'Группа из {len(butch)} закладок успешно загружена')
 
     def execute(self) -> None:
-        self.createDataTable()
+        self.createInfoTable(self.timestamp)
         for batch in self.read():
             self.write(batch)
+        self.createHeadersTables()
+        self.createDataTable()
         self._dbWriteInterface.SaveSQLiteDatabaseFromRamToFile()

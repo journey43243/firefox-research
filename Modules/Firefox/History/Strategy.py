@@ -54,11 +54,11 @@ class HistoryStrategy(StrategyABC):
                и индекс по URL.
                """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE history (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT,
+            '''CREATE TABLE Data (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT,
                 title TEXT, visit_count INTEGER, typed INTEGER, last_visit_date text,
                 profile_id INTEGER)'''
         )
-        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_history_url on history (url)''')
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_history_url on Data (url)''')
         self._logInterface.Info(type(self), 'Таблица с историей создана')
 
     def createHeadersTables(self):
@@ -107,15 +107,17 @@ class HistoryStrategy(StrategyABC):
                 или повреждена. Ошибка логируется.
         """
         try:
-            cursor = self._dbReadInterface._cursor.execute(
+            cursor = (self._dbReadInterface.Fetch(
                 '''SELECT url, title, visit_count, typed,
                 datetime(last_visit_date / 1000000, 'unixepoch') AS last_visit_date
-                FROM moz_places'''
-            )
-            while True:
-                batch = cursor.fetchmany(500)
+                FROM moz_places''', commit_required=False
+            ))
+            i = 0
+            while i < len(cursor):
+                batch = cursor[i: i + 500]
                 if not batch:
                     break
+                i += 500
                 yield [History(*row, profile_id=self._profile_id) for row in batch]
         except sqlite3.OperationalError:
             self._logInterface.Warn(
@@ -136,13 +138,13 @@ class HistoryStrategy(StrategyABC):
         Raises:
             Exception: Возможные ошибки записи логируются и не пробрасываются.
         """
-        self._dbWriteInterface._cursor.executemany(
-            '''INSERT INTO history (url, title, visit_count,
-            typed, last_visit_date, profile_id)
-            VALUES (?, ?, ?, ?, ?, ?)''',
-            butch
-        )
-        self._dbWriteInterface.Commit()
+        for row in butch:
+            self._dbWriteInterface.ExecCommit(
+                '''INSERT INTO Data (url, title, visit_count,
+                typed, last_visit_date, profile_id)
+                VALUES (?, ?, ?, ?, ?, ?)''',
+                row
+            )
         self._logInterface.Info(type(self), 'Группа записей успешно загружена')
 
     def execute(self) -> None:

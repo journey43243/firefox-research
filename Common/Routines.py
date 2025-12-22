@@ -508,10 +508,11 @@ class _AbstractLocalDatabaseClass(_AbstractDatabaseClass):
             message = f'Ошибка запроса к БД: {e}'
             self._log.Warn('_AbstractLocalDatabaseClass',message)
         
-    def Fetch(self,query:str,params:Any='') -> List:
+    def Fetch(self,query:str,params:Any='', commit_required=True) -> List:
         try:
             self._cursor.execute(query, params)
-            self._connection.commit()    
+            if commit_required:
+                self._connection.commit()
             return self._cursor.fetchall()
         except (sqlite3.OperationalError,sqlite3.ProgrammingError) as e:
             message = f'Ошибка запроса к БД: {e}'
