@@ -71,7 +71,7 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         и индекс для ускоренного поиска по пути.
         """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE profiles (ID INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
+            '''CREATE TABLE Data (ID INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT)'''
         )
         self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_profiles_path on profiles (path)''')
         self._logInterface.Info(type(self), 'Таблица с профилями создана.')
@@ -127,7 +127,7 @@ class ProfilesStrategy(StrategyABC, PathMixin):
         """
         for record in butch:
             self._dbWriteInterface.ExecCommit(
-                '''INSERT INTO profiles (path) VALUES (?)''', (record,)
+                '''INSERT INTO Data (path) VALUES (?)''', (record,)
             )
         self._logInterface.Info(type(self), 'Все профили загружены в таблицу')
 

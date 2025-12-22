@@ -61,7 +61,7 @@ class ExtensionsStrategy(StrategyABC):
                 и соответствующие индексы по id и profile_id.
                 """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE IF NOT EXISTS extensions (
+            '''CREATE TABLE IF NOT EXISTS Data (
                 id TEXT PRIMARY KEY,
                 name TEXT,
                 version TEXT,
@@ -78,9 +78,9 @@ class ExtensionsStrategy(StrategyABC):
                 profile_id INTEGER
             )'''
         )
-        self._dbWriteInterface.ExecCommit('''CREATE INDEX IF NOT EXISTS idx_extensions_id ON extensions (id)''')
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX IF NOT EXISTS idx_extensions_id ON Data (id)''')
         self._dbWriteInterface.ExecCommit(
-            '''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON extensions (profile_id)''')
+            '''CREATE INDEX IF NOT EXISTS idx_extensions_profile_id ON Data (profile_id)''')
         self._logInterface.Info(type(self), 'Таблица с расширениями создана')
 
     def createHeadersTables(self):
@@ -204,14 +204,14 @@ class ExtensionsStrategy(StrategyABC):
             Exception: Любая ошибка записи логируется.
         """
         try:
-            self._dbWriteInterface._cursor.executemany(
-                '''INSERT OR IGNORE INTO extensions 
-                (id, name, version, description, type, active, user_disabled, 
-                 install_date, update_date, path, source_url, permissions, location, profile_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                batch
-            )
-            self._dbWriteInterface.Commit()
+            for row in batch:
+                self._dbWriteInterface.ExecCommit(
+                    '''INSERT OR IGNORE INTO Data 
+                    (id, name, version, description, type, active, user_disabled, 
+                     install_date, update_date, path, source_url, permissions, location, profile_id) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    row
+                )
             self._logInterface.Info(type(self), 'Расширения записаны в БД')
         except Exception as e:
             self._logInterface.Error(

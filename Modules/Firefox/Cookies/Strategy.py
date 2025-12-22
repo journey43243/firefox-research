@@ -87,7 +87,7 @@ class CookiesStrategy(StrategyABC):
         )
 
         self._dbWriteInterface.ExecCommit(
-            '''CREATE INDEX idx_cookies_base_domain ON cookies (base_domain)'''
+            '''CREATE INDEX idx_cookies_base_domain ON Data (base_domain)'''
         )
 
         self._logInterface.Info(type(self), 'Таблица cookies создана')
@@ -137,8 +137,11 @@ class CookiesStrategy(StrategyABC):
         """
         try:
             # Узнаём доступные столбцы
-            pragma = self._dbReadInterface._cursor.execute("PRAGMA table_info(moz_cookies)")
-            columns = [col[1] for col in pragma.fetchall()]
+            pragma = self._dbReadInterface.Fetch("PRAGMA table_info(moz_cookies)", commit_required=False)
+            if pragma:
+                columns = [col[1] for col in pragma]
+            else:
+                columns = []
 
             # Базовые поля (есть всегда)
             select_fields = [
@@ -162,11 +165,12 @@ class CookiesStrategy(StrategyABC):
 
             # Выполняем запрос
             query = f"SELECT {', '.join(select_fields)} FROM moz_cookies"
-            cursor = self._dbReadInterface._cursor.execute(query)
+            cursor = self._dbReadInterface.Fetch(query, commit_required=False)
 
             # Читаем пакетами
-            while True:
-                batch = cursor.fetchmany(500)
+            i = 0
+            while i < len(cursor):
+                batch = cursor[i: i + 500]
                 if not batch:
                     break
 
@@ -239,24 +243,25 @@ class CookiesStrategy(StrategyABC):
                             self._profile_id
                         )
                     )
+                i += 500
                 yield result
-
+        except AttributeError:
+            pass
         except sqlite3.Error as e:
             print(f"Ошибка SQLite при чтении cookies: {e}")
 
     def write(self, batch: Iterable[Cookie]) -> None:
-        data = batch
-        self._dbWriteInterface._cursor.executemany(
-            '''INSERT OR REPLACE INTO Data
-               (id, origin_attributes, name, value, host, path, expiry,
-                last_accessed, creation_time, is_secure, is_http_only,
-                in_browser_element, same_site, scheme_map,
-                is_partitioned_attribute_set, update_time, base_domain, profile_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-            data
-        )
-        self._dbWriteInterface.Commit()
-        self._logInterface.Info(type(self), f'Группа из {len(data)} cookies успешно загружена')
+        for row in batch:
+            self._dbWriteInterface.ExecCommit(
+                '''INSERT OR REPLACE INTO Data
+                   (id, origin_attributes, name, value, host, path, expiry,
+                    last_accessed, creation_time, is_secure, is_http_only,
+                    in_browser_element, same_site, scheme_map,
+                    is_partitioned_attribute_set, update_time, base_domain, profile_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                row
+            )
+        self._logInterface.Info(type(self), f'Группа из {len(batch)} cookies успешно загружена')
 
     def execute(self) -> None:
         self.createDataTable()

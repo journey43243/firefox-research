@@ -51,10 +51,10 @@ class DownloadsStrategy(StrategyABC):
                и индекс по place_id.
                """
         self._dbWriteInterface.ExecCommit(
-            '''CREATE TABLE downloads (id PRIMARY KEY, place_id INTEGER,
+            '''CREATE TABLE Data (id PRIMARY KEY, place_id INTEGER,
             anno_attribute_id INTEGER, content TEXT, profile_id INTEGER)'''
         )
-        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_downloads_place_id on downloads (place_id)''')
+        self._dbWriteInterface.ExecCommit('''CREATE INDEX idx_downloads_place_id on Data (place_id)''')
         self._logInterface.Info(type(self), 'Таблица с загрузками создана')
 
     def createHeadersTables(self):
@@ -99,17 +99,20 @@ class DownloadsStrategy(StrategyABC):
                 или база данных недоступна. Ошибка логируется и не пробрасывается.
         """
         try:
-            cursor = self._dbReadInterface._cursor.execute(
+            if not self._dbReadInterface.IsConnected():
+                return
+            cursor = self._dbReadInterface.Fetch(
                 """SELECT moz_annos.id, moz_annos.place_id, moz_annos.anno_attribute_id, moz_annos.content
                    FROM moz_annos
                    WHERE moz_annos.anno_attribute_id IN (
-                       SELECT id FROM moz_anno_attributes WHERE name LIKE '%downloads%')"""
+                       SELECT id FROM moz_anno_attributes WHERE name LIKE '%downloads%')""", commit_required=False
             )
-
-            while True:
-                batch = cursor.fetchmany(500)
+            i = 0
+            while i < len(cursor):
+                batch = cursor[i: i + 500]
                 if not batch:
                     break
+                i += 500
                 yield [Download(*row, profile_id=self._profile_id) for row in batch]
 
         except sqlite3.OperationalError as e:
@@ -137,16 +140,12 @@ class DownloadsStrategy(StrategyABC):
             Exception: Любая ошибка записи логируется, но не пробрасывается.
         """
         try:
-            params = [tuple(item) for item in list(batch)]
-            if not params:
-                return
-
-            self._dbWriteInterface._cursor.executemany(
-                '''INSERT OR IGNORE INTO downloads (id, place_id, anno_attribute_id, content, profile_id)
-                   VALUES (?, ?, ?, ?, ?)''',
-                params
-            )
-            self._dbWriteInterface.Commit()
+            for row in batch:
+                self._dbWriteInterface.ExecCommit(
+                    '''INSERT OR IGNORE INTO Data (id, place_id, anno_attribute_id, content, profile_id)
+                       VALUES (?, ?, ?, ?, ?)''',
+                    row
+                )
             self._logInterface.Info(type(self), f'Группа загрузок успешно загружена')
         except Exception as e:
             self._logInterface.Error(type(self), f'Ошибка при записи загрузок: {e}')
