@@ -106,24 +106,24 @@ class CookiesStrategy(StrategyABC):
 
         self._dbWriteInterface.ExecCommit(
             '''INSERT INTO Headers (Name, Label, Width, DataType, Comment) VALUES
-                ('id', 'ID cookie', -1, 'int', 'Уникальный идентификатор cookie'),
-                ('origin_attributes', 'Origin Attributes', -1, 'string', 'Контекст происхождения cookie'),
-                ('name', 'Имя', -1, 'string', 'Имя cookie'),
-                ('value', 'Значение', -1, 'string', 'Значение cookie'),
-                ('host', 'Хост', -1, 'string', 'Домен, к которому относится cookie'),
-                ('path', 'Путь', -1, 'string', 'Путь cookie'),
-                ('expiry', 'Истекает', -1, 'string', 'Дата истечения cookie'),
-                ('last_accessed', 'Последний доступ', -1, 'string', 'Когда cookie был использован'),
-                ('creation_time', 'Создан', -1, 'string', 'Когда cookie был создан'),
-                ('is_secure', 'Secure', -1, 'int', 'Флаг Secure'),
-                ('is_http_only', 'HttpOnly', -1, 'int', 'Флаг HttpOnly'),
+                ('id', 'ID cookie', 165, 'int', 'Уникальный идентификатор cookie'),
+                ('origin_attributes', 'Origin Attributes', 175, 'string', 'Контекст происхождения cookie'),
+                ('name', 'Имя', 190, 'string', 'Имя cookie'),
+                ('value', 'Значение', 200, 'string', 'Значение cookie'),
+                ('host', 'Хост', 185, 'string', 'Домен, к которому относится cookie'),
+                ('path', 'Путь', 155, 'string', 'Путь cookie'),
+                ('expiry', 'Истекает', 160, 'string', 'Дата истечения cookie'),
+                ('last_accessed', 'Последний доступ', 180, 'string', 'Когда cookie был использован'),
+                ('creation_time', 'Создан', 170, 'string', 'Когда cookie был создан'),
+                ('is_secure', 'Secure', 150, 'int', 'Флаг Secure'),
+                ('is_http_only', 'HttpOnly', 155, 'int', 'Флаг HttpOnly'),
                 ('in_browser_element', 'InBrowserElement', -1, 'int', 'Флаг inBrowserElement'),
-                ('same_site', 'SameSite', -1, 'int', 'Политика SameSite'),
+                ('same_site', 'SameSite', 160, 'int', 'Политика SameSite'),
                 ('scheme_map', 'SchemeMap', -1, 'int', 'Карта схемы cookie'),
-                ('is_partitioned_attribute_set', 'Partitioned', -1, 'int', 'Признак разделённого cookie'),
+                ('is_partitioned_attribute_set', 'Partitioned', 165, 'int', 'Признак разделённого cookie'),
                 ('update_time', 'UpdateTime', -1, 'int', 'Время обновления cookie'),
-                ('base_domain', 'BaseDomain', -1, 'string', 'Базовый домен cookie'),
-                ('profile_id', 'ID профиля', -1, 'int', 'Связанный профиль браузера')
+                ('base_domain', 'BaseDomain', 175, 'string', 'Базовый домен cookie'),
+                ('profile_id', 'ID профиля', 160, 'int', 'Связанный профиль браузера')
             '''
         )
 
